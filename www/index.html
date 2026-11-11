@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Coast to Coast</title>
+<meta name="description" content="Title all 50 states in 60 seconds. A coast-to-coast road trip game.">
+<meta name="theme-color" content="#0b1b3a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Coast to Coast">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game" aria-label="Game"></canvas>
+
+  <div id="hud" hidden>
+    <div class="hud-row">
+      <div class="stat"><span class="label">Score</span><span id="score">0</span></div>
+      <div id="slots" aria-label="Shields collected">
+        <svg class="slot" viewBox="0 0 24 24"><path d="M12 2 21 5v6c0 6-4 10-9 12C7 21 3 17 3 11V5z"/></svg>
+        <svg class="slot" viewBox="0 0 24 24"><path d="M12 2 21 5v6c0 6-4 10-9 12C7 21 3 17 3 11V5z"/></svg>
+        <svg class="slot" viewBox="0 0 24 24"><path d="M12 2 21 5v6c0 6-4 10-9 12C7 21 3 17 3 11V5z"/></svg>
+      </div>
+      <div class="stat right"><span class="label">Time</span><span id="time">60</span></div>
+    </div>
+    <div class="progress">
+      <div class="progress-text"><span id="stateName">California</span><span id="mult"></span><span id="stateCount">1 / 50</span></div>
+      <div class="bar"><div id="bar"></div></div>
+    </div>
+    <div id="banner" hidden>AUTOPILOT</div>
+  </div>
+
+  <button id="mute" class="icon-btn" aria-label="Toggle sound">🔊</button>
+
+  <section id="menu" class="panel">
+    <p class="kicker" id="eventTag"></p>
+    <h1>COAST<span>to</span>COAST</h1>
+    <p class="tag">Title all 50 states in 60 seconds.</p>
+    <ul class="how">
+      <li><b class="dot title"></b><span><b>Grab titles</b> to close deals and build your multiplier.</span></li>
+      <li><b class="dot haz"></b><span><b>Dodge the red tape</b> — rejected titles, wrong fees, DMV lines.</span></li>
+      <li><b class="dot shield"></b><span><b>Press your luck:</b> three shields hit the jackpot and <span class="brand"></span> does the paperwork for you. Hit red tape first and you lose them all.</span></li>
+    </ul>
+    <button id="play" class="btn primary">Start driving</button>
+    <button id="showBoard" class="btn">Leaderboard</button>
+    <p class="hint">Tap the left or right side of the screen to change lanes.</p>
+  </section>
+
+  <section id="over" class="panel" hidden>
+    <p class="kicker" id="rank"></p>
+    <div class="big" id="finalScore">0</div>
+    <p class="tag" id="finalStates"></p>
+    <form id="saveForm">
+      <input id="name" maxlength="14" autocomplete="off" autocapitalize="characters" placeholder="Your name" aria-label="Your name">
+      <button class="btn primary" type="submit">Save score</button>
+    </form>
+    <ol id="overBoard" class="board"></ol>
+    <p class="cta" id="cta"></p>
+    <button id="again" class="btn primary">Drive again</button>
+    <button id="share" class="btn">Share my score</button>
+  </section>
+
+  <section id="board" class="panel" hidden>
+    <p class="kicker">This device</p>
+    <h2>Leaderboard</h2>
+    <ol id="menuBoard" class="board"></ol>
+    <button id="closeBoard" class="btn primary">Back</button>
+  </section>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

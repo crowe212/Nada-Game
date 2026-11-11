@@ -1,0 +1,11 @@
+{
+	"appId": "com.example.coasttocoast",
+	"appName": "Coast to Coast",
+	"webDir": "www",
+	"backgroundColor": "#0b1b3a",
+	"ios": {
+		"contentInset": "never",
+		"scrollEnabled": false
+	},
+	"packageClassList": []
+}
