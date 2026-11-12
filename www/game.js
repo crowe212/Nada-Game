@@ -565,7 +565,7 @@
       return;
     }
 
-    let nH = calm || Math.random() < (tough ? 0.08 : 0.28 - diff * 0.2) ? 0 : (!g.lastTwo && Math.random() < 0.04 + diff * diff * 0.5 + (tough ? 0.12 : 0) ? 2 : 1);
+    let nH = calm || Math.random() < (tough ? 0.08 : 0.28 - diff * 0.2) ? 0 : (!g.lastTwo && Math.random() < 0.04 + diff * diff * 0.42 + (tough ? 0.1 : 0) ? 2 : 1);
     if (truck) nH = Math.min(nH, 1); // never let a truck plus a row close every lane
     const free = lanes.slice(nH);
     g.lastTwo = nH === 2;
@@ -792,7 +792,7 @@
       if (o.type === 'plaza' || o.done || g.finished) continue;
       const same = Math.abs(g.px - o.lane) < 0.55;
       if (o.type === 'haz') {
-        if (auto && o.d < 14) {
+        if (auto) { // Full-Service: every hurdle in sight is approved straight away, not at the last second
           o.done = true; o.approved = true;
           add(150);
         } else if (Math.abs(g.px - o.lane) < 0.62 && o.d < 2.5 && o.d > -3) {
