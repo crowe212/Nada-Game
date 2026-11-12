@@ -1,7 +1,7 @@
 {
   "name": "Coast to Coast",
   "short_name": "Coast2Coast",
-  "description": "Title and register in all 50 states in 90 seconds. From DLR50 by DLRdmv.",
+  "description": "Title and register in all 50 states before your temp tag expires. From DLR50 by DLRdmv.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

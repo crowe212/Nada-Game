@@ -32,6 +32,30 @@ Florida, title all 50 states, and get on the leaderboard.
   with the densest stretch on the run-in to Florida.
 - A run lasts 90 seconds. Reaching all 50 states early pays a bonus per second left.
 
+## More in the game
+
+- **Temp tag countdown**: the clock is a 90-day temp tag, one day per second. Run out and the tag expires.
+- **Power-ups**: AccuFee™ pulls in every title for a few seconds; eQA Corrections repairs one hit.
+- **Shout-outs**: streak and milestone lines in the words prospects use ("Penny perfect!",
+  "It's like a little DMV Christmas!").
+- **Stars and paint jobs**: each run earns up to 3 stars (15, 30 and 50 states). Stars add up to
+  unlock paint: Temp Tag White, DMV Beige, Midnight Navy, Safety Margin Gold.
+- **State signs** stand on the shoulder; a checkered arch marks the Florida finish.
+- **Pause button**, results stats and a personal-best banner.
+
+## Song
+
+Save the song as `www/audio/perfect-it.mp3`. It starts on the first tap (browsers do not allow
+sound before that) and loops. Without the file, a built-in synth loop plays during runs.
+
+## Shared leaderboard and tester feedback
+
+Both use one Google Sheet you own. Follow the steps at the top of
+`tools/leaderboard-apps-script.gs`, then paste the web-app URL into `LEADERBOARD_URL` at the top
+of `www/game.js`. Scores go to a "Scores" tab and feedback to a "Feedback" tab. Until that is
+set, scores stay on each device and the Feedback button hands the note to the phone's share
+sheet instead.
+
 ## Where the ideas came from
 
 | From the meeting | In the game |
@@ -74,6 +98,5 @@ wording was taken from dlr50.com.
 
 ## Known limits
 
-- The leaderboard is saved on each device. A shared, booth-wide leaderboard needs a
-  small online score service, which is not built yet.
+- The shared leaderboard and feedback inbox need the Google Sheet set up (see above).
 - The iPhone project was generated on Linux and has not been compiled in Xcode yet.

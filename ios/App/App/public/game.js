@@ -8,7 +8,10 @@
   const EVENT = 'NADA Show 2027';
   const CTA = 'Out-of-state titling, done in days, not months. Get a demo at dlr50.com.';
   const PLATE = 'DLR50';      // text on the car's license plate
-  const RUN_SECONDS = 90;
+  const RUN_SECONDS = 90;      // also the length of the temp tag, one day per second
+  // Shared leaderboard: paste the web-app URL from tools/leaderboard-apps-script.gs here.
+  // Left empty, scores are kept on each device only.
+  const LEADERBOARD_URL = '';
   const MAX_HITS = 4;         // hurdles the car can take before it is totaled
   const AUTOPILOT_SECONDS = 4;
 
@@ -57,6 +60,23 @@
     'North Carolina': 'Fee math can take all day',
     Florida: 'Tax reciprocity rules',
   };
+
+  // Shout-outs when a streak multiplier is reached (×2, ×3, ×4, ×5) and at state milestones.
+  const CALLOUTS = ['Penny perfect!', 'Clean packet!', 'First-time approval!', 'Registration master!'];
+  const MILESTONES = {
+    10: ['10 states down', 'No Googling required.'],
+    25: ['Halfway there', 'Herding cats like a pro.'],
+    40: ['40 states titled', 'Hope-and-pray method not needed.'],
+  };
+  // Paint jobs, unlocked by total stars earned across runs. b = body shades, c = cabin, s = stripes.
+  const PAINTS = [
+    { id: 'blue', name: 'DLR Blue', need: 0, b: ['#7fd8fb', '#25aae2', '#1580b6', '#0d5a86'], c: ['#63cdf8', '#1b8fc6'], s: 'rgba(255,255,255,.92)' },
+    { id: 'white', name: 'Temp Tag White', need: 2, b: ['#ffffff', '#eef1f6', '#c9d0dc', '#9aa3b3'], c: ['#f4f6fa', '#b9c1cf'], s: '#25aae2' },
+    { id: 'beige', name: 'DMV Beige', need: 4, b: ['#f1e3c4', '#d9c49a', '#b89f72', '#8f7a55'], c: ['#e6d5b0', '#a8926a'], s: '#6b5a3c' },
+    { id: 'navy', name: 'Midnight Navy', need: 7, b: ['#4a49a8', '#2b2a7a', '#1b1a58', '#101040'], c: ['#3a3990', '#17174f'], s: '#25aae2' },
+    { id: 'gold', name: 'Safety Margin Gold', need: 10, b: ['#fff0a8', '#ffc533', '#e09a00', '#a86e00'], c: ['#ffe07a', '#c98a00'], s: '#23226b' },
+  ];
+  const STAR_AT = [15, 30, 50]; // states needed for 1, 2 and 3 stars
 
   // "I'm a…" picker on the menu; tailors the message on the results screen.
   const ROLES = [
@@ -179,6 +199,54 @@
     eng.f.frequency.setTargetAtTime(240 + speed * 330, t, 0.12);
     eng.gn.gain.setTargetAtTime(on && !muted ? 0.055 : 0, t, 0.15);
   }
+  // Theme song: plays from the first tap and loops. If the file is missing, the synth loop below is used during runs.
+  const SONG_URL = 'audio/perfect-it.mp3';
+  let song = null;
+  try {
+    song = new Audio(SONG_URL); song.loop = true; song.volume = 0.42; song.preload = 'auto';
+    song.addEventListener('error', () => { song = null; });
+  } catch (e) { song = null; }
+  function songPlay() { if (song && !muted && song.paused && !document.hidden) song.play().catch(() => {}); }
+  function songPause() { if (song) song.pause(); }
+
+  // Fallback music: a simple driving loop, scheduled a little ahead of time.
+  let music = null;
+  function musicStart() {
+    if (song) return songPlay();
+    if (!ac || music) return;
+    try {
+      const out = ac.createGain(); out.gain.value = 0.55; out.connect(ac.destination);
+      const roots = [110, 87.31, 130.81, 98], arp = [1, 1.5, 2, 1.5, 3, 2, 1.5, 2], spb = 60 / 126 / 2;
+      let step = 0, next = ac.currentTime + 0.1;
+      const note = (f, t, dur, type, vol, cut) => {
+        const o = ac.createOscillator(), a = ac.createGain(), lp = ac.createBiquadFilter();
+        o.type = type; o.frequency.value = f; lp.type = 'lowpass'; lp.frequency.value = cut;
+        a.gain.setValueAtTime(vol, t); a.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(lp).connect(a).connect(out); o.start(t); o.stop(t + dur + 0.02);
+      };
+      const tick = () => {
+        if (next < ac.currentTime) next = ac.currentTime + 0.05;
+        while (next < ac.currentTime + 0.25) {
+          const r = roots[Math.floor(step / 8) % 4];
+          if (!muted) {
+            note(r, next, spb * 0.9, 'sawtooth', 0.05, 500);
+            note(r * 2 * arp[step % 8], next, spb * 0.7, 'triangle', 0.03, 2400);
+            if (step % 4 === 2) note(r * 4, next, spb * 0.4, 'square', 0.01, 3000);
+          }
+          step++; next += spb;
+        }
+      };
+      music = { id: setInterval(tick, 80), out };
+    } catch (e) { music = null; }
+  }
+  function musicStop() {
+    if (!music) return;
+    clearInterval(music.id);
+    try { music.out.gain.setTargetAtTime(0, ac.currentTime, 0.08); } catch (e) { /* ignore */ }
+    music = null;
+  }
+  const buzz = (pattern) => { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* not supported */ } };
+
   const sfx = {
     smash: () => { noise(0.22, 0.28, 2600); tone(120, 0.1, 'square', 0.05); },
     crash: () => { noise(0.8, 0.4, 1100); tone(70, 0.6, 'sawtooth', 0.1); },
@@ -243,7 +311,8 @@
     g = {
       t: 0, intro: 1.2, timeLeft: RUN_SECONDS, dist: 0, score: 0,
       lane: 1, tx: 1, px: 1, speed: 0.45, clean: 0,
-      health: MAX_HITS + (role().extraHits || 0), crashed: false, spin: 0, hint: 4,
+      health: MAX_HITS + (role().extraHits || 0), maxHealth: MAX_HITS + (role().extraHits || 0), crashed: false, expired: false, spin: 0, hint: 4,
+      magnet: 0, nextPower: 7, closeCalls: 0, hits: 0, bestMult: 1, warned: false,
       curve: 0, curveTarget: 0, curveLeft: 320, heading: 0,
       state: 0, toLine: STATE_LEN, shields: role().startShields || 0, autopilot: 0, jackpots: 0,
       streak: 0, mult: 1, titles: 0, invuln: 0, shake: 0, flash: 0,
@@ -251,26 +320,58 @@
       rowAcc: 0, scenAcc: 0, rowN: 0, lastTwo: false, nextShield: 4,
       finished: false, endDelay: 0, sinceLine: 9,
     };
-    toast('NorCal → Orlando. GO!', '#fff', 1.6);
+    toast('NorCal → Orlando. GO!', '#fff', 1.9, false, 'Title all 50 before the temp tag expires');
   }
 
+  let howThenPlay = false;
+  function showHow(thenPlay) {
+    howThenPlay = thenPlay;
+    el.menu.hidden = true; $('howto').hidden = false;
+  }
   function start() {
     unlockAudio();
+    if (!store.get('c2c.seenHow', false)) return showHow(true); // first run: show the rules once
+    begin();
+  }
+  function begin() {
+    unlockAudio();
     engineStart();
+    musicStart();
     drag = null;
     newRun();
     buildHealth();
     mode = 'play';
     lastSaved = -1;
-    el.menu.hidden = el.over.hidden = el.board.hidden = true;
+    el.menu.hidden = el.over.hidden = el.board.hidden = $('howto').hidden = $('paused').hidden = true;
     el.hud.hidden = false;
     el.mute.hidden = true;
+    $('pause').hidden = false;
     paintHud(true);
+  }
+  function pause() {
+    if (mode !== 'play' || g.finished) return;
+    mode = 'paused';
+    engineSet(0, false); musicStop(); songPause();
+    $('paused').hidden = false; $('pause').hidden = true; el.mute.hidden = false;
+  }
+  function resume() {
+    if (mode !== 'paused') return;
+    mode = 'play';
+    $('paused').hidden = true; $('pause').hidden = false; el.mute.hidden = true;
+    musicStart();
+  }
+  function toMenu() {
+    mode = 'menu';
+    engineSet(0, false); musicStop();
+    el.over.hidden = $('paused').hidden = el.hud.hidden = $('pause').hidden = true;
+    el.menu.hidden = false; el.mute.hidden = false;
+    paintPaints();
   }
 
   function endRun() {
     mode = 'over';
-    engineSet(0, false);
+    engineSet(0, false); musicStop();
+    $('pause').hidden = true;
     el.hud.hidden = true;
     el.mute.hidden = false;
     const n = g.state + 1;
@@ -279,19 +380,71 @@
     $('rank').textContent = rank;
     $('finalScore').textContent = fmt(g.score);
     $('finalStates').textContent = n >= 50
-      ? `All 50 states titled with ${Math.ceil(g.timeLeft)}s to spare!`
+      ? `All 50 states titled with ${Math.ceil(g.timeLeft)} days left on the temp tag!`
       : g.crashed ? `Car totaled in ${STATES[g.state]} · ${n} of 50 states titled`
-      : `${n} of 50 states titled · made it to ${STATES[g.state]}`;
+      : `Temp tag expired in ${STATES[g.state]} · ${n} of 50 states titled`;
+    // Stars, personal best, run stats and paint unlocks
+    const stars = STAR_AT.filter((t) => n >= t).length;
+    [...$('stars').children].forEach((c, i) => { c.classList.remove('on'); if (i < stars) { void c.getBoundingClientRect(); c.classList.add('on'); } });
+    const best = store.get('c2c.best', 0), score = Math.round(g.score);
+    $('bestTag').hidden = !(score > best && best > 0);
+    if (score > best) store.set('c2c.best', score);
+    $('stats').textContent = `${g.titles} titles · best streak ×${g.bestMult} · ${g.jackpots} jackpot${g.jackpots === 1 ? '' : 's'} · ${g.closeCalls} close call${g.closeCalls === 1 ? '' : 's'}`;
+    const before = store.get('c2c.stars', 0), after = before + stars;
+    store.set('c2c.stars', after);
+    const won = PAINTS.filter((pt) => pt.need > before && pt.need <= after);
+    const nextPaint = PAINTS.find((pt) => pt.need > after);
+    $('unlock').hidden = !(won.length || nextPaint);
+    $('unlock').textContent = won.length ? `New paint unlocked: ${won.map((pt) => pt.name).join(', ')}. Pick it in the garage.`
+      : nextPaint ? `${nextPaint.need - after} more star${nextPaint.need - after === 1 ? '' : 's'} unlocks ${nextPaint.name} paint.` : '';
     $('cta').textContent = `${role().line} ${CTA}`;
+    fetchRemote();
     $('saveForm').hidden = false;
     $('name').value = store.get('c2c.name', '');
     renderBoard($('overBoard'), 5);
     el.over.hidden = false;
-    if (!g.finished) sfx.end();
   }
 
   // ---------- Leaderboard (stored on this device) ----------
-  const scores = () => store.get('c2c.scores', []);
+  let remoteScores = store.get('c2c.remote', null);
+  let pendingEntry = null; // the score just saved here, shown until the shared list includes it
+  function scores() {
+    const local = store.get('c2c.scores', []);
+    if (!LEADERBOARD_URL || !remoteScores) return local;
+    const list = remoteScores.slice();
+    if (pendingEntry && !list.some((x) => x.id === pendingEntry.id)) list.push(pendingEntry);
+    return list.sort((a, b) => b.score - a.score);
+  }
+  async function fetchRemote() {
+    if (!LEADERBOARD_URL) return;
+    try {
+      const list = await (await fetch(LEADERBOARD_URL, { cache: 'no-store' })).json();
+      if (!Array.isArray(list)) return;
+      remoteScores = list.slice(0, 25);
+      store.set('c2c.remote', remoteScores);
+      renderBoard($('overBoard'), 5); renderBoard($('menuBoard'), 10);
+    } catch (e) { /* offline: keep showing the last list we had */ }
+  }
+  // Tester feedback: goes to the same Google Sheet (a "Feedback" tab). Without one, it is handed to the
+  // phone's share sheet or copied, so the tester can send it along themselves.
+  async function sendFeedback(text, who) {
+    const note = { type: 'feedback', text: text.slice(0, 1000), name: who.slice(0, 40), role: role().label, when: new Date().toISOString(),
+      lastRun: g ? `${Math.round(g.score)} pts, ${g.state + 1}/50` : 'none' };
+    if (LEADERBOARD_URL) {
+      try {
+        await fetch(LEADERBOARD_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(note) });
+        return 'Sent. Thank you!';
+      } catch (e) { /* fall through */ }
+    }
+    const msg = `Coast to Coast feedback${note.name ? ' from ' + note.name : ''}: ${note.text}`;
+    try { if (navigator.share) { await navigator.share({ text: msg }); return 'Thanks!'; } } catch (e) { /* cancelled */ }
+    try { await navigator.clipboard.writeText(msg); return 'Copied. Paste it into a text or email to us.'; } catch (e) { return 'Could not send. Please tell us in person!'; }
+  }
+  function postRemote(entry) {
+    if (!LEADERBOARD_URL) return;
+    fetch(LEADERBOARD_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(entry) })
+      .then(fetchRemote).catch(() => {});
+  }
   function saveScore(name) {
     const list = scores();
     const entry = { name, role: role().label, score: Math.round(g.score), states: g.state + 1, id: Date.now() };
@@ -300,6 +453,8 @@
     store.set('c2c.scores', list.slice(0, 25));
     store.set('c2c.name', name);
     lastSaved = entry.id;
+    pendingEntry = entry;
+    postRemote(entry);
   }
   function renderBoard(ol, limit) {
     const list = scores().slice(0, limit);
@@ -368,8 +523,15 @@
       g.objs.push({ type: 'shield', lane: shieldLane, d });
       g.nextShield = 4 + ((Math.random() * 3) | 0);
     }
+    let powerLane = -1;
+    if (--g.nextPower <= 0 && free.some((l) => l !== shieldLane)) { // product power-ups
+      powerLane = free.find((l) => l !== shieldLane);
+      const kind = g.health < g.maxHealth && Math.random() < 0.65 ? 'eqa' : 'accufee';
+      g.objs.push({ type: 'power', kind, lane: powerLane, d });
+      g.nextPower = 9 + ((Math.random() * 5) | 0);
+    }
     for (const l of free) {
-      if (l !== shieldLane && Math.random() < 0.6) g.objs.push({ type: 'title', lane: l, d });
+      if (l !== shieldLane && l !== powerLane && Math.random() < 0.6) g.objs.push({ type: 'title', lane: l, d });
     }
   }
 
@@ -398,7 +560,8 @@
       sfx.cover();
       return;
     }
-    g.health--; g.streak = 0; g.mult = 1;
+    g.health--; g.hits++; g.streak = 0; g.mult = 1;
+    buzz(70);
     g.speed = 0.4; g.clean *= 0.5; g.invuln = 0.8; g.shake = 0.4;
     burst(x, playerY - 30, '#ff5a5f', 18);
     if (g.health <= 0) return crash();
@@ -406,14 +569,37 @@
     sfx.hit();
   }
 
+  function expire() {
+    g.finished = true; g.expired = true; g.endDelay = 2; g.autopilot = 0;
+    toast('TAG EXPIRED!', '#ff6b6b', 2, true, 'Days, not months, remember?');
+    buzz([60, 40, 60]);
+    sfx.end();
+  }
+
   function crash() {
+    buzz([90, 40, 180]);
     g.finished = true; g.crashed = true; g.endDelay = 2.2; g.autopilot = 0; g.shake = 0.7;
     toast('TOTALED!', '#ff6b6b', 2.2, true, 'Too much red tape.');
     burst(laneX(g.px, 1), playerY - 30, '#ffb347', 30);
     sfx.crash();
   }
 
+  function power(o) {
+    buzz(12); sfx.shield(2);
+    if (o.kind === 'accufee') {
+      g.magnet = 7; add(200, o.lane, '#8dffb4');
+      toast('AccuFee™', '#8dffb4', 1.7, false, 'Every title, down to the penny');
+    } else if (g.health < g.maxHealth) {
+      g.health++;
+      toast('eQA Corrections', '#ffb36b', 1.7, false, 'Fixed before it went out. Car repaired.');
+    } else {
+      add(500, o.lane, '#ffb36b');
+      toast('eQA Corrections', '#ffb36b', 1.5, false, 'Clean packet bonus');
+    }
+  }
+
   function jackpot() {
+    buzz([30, 30, 30, 30, 90]);
     g.shields = 0; g.jackpots++;
     g.autopilot = AUTOPILOT_SECONDS; g.invuln = 0; g.flash = 0.5;
     add(2000);
@@ -432,6 +618,8 @@
     add(fact ? 500 : 250);
     if (fact && g.state < STATES.length - 1) {
       toast(`FAST FACT · ${STATES[g.state].toUpperCase()}`, '#7fd8fb', 2.2, false, fact);
+    } else if (MILESTONES[g.state + 1]) {
+      toast(MILESTONES[g.state + 1][0], '#ffc533', 1.8, false, MILESTONES[g.state + 1][1]);
     }
     sfx.state();
     if (g.state >= STATES.length - 1) {
@@ -454,7 +642,8 @@
       g.intro -= dt;
     } else {
       g.timeLeft -= dt;
-      if (g.timeLeft <= 0) { g.timeLeft = 0; return endRun(); }
+      if (!g.warned && g.timeLeft <= 15) { g.warned = true; toast('Temp tag expires in 15 days!', '#ff9a9a', 1.8, false, 'Floor it.'); }
+      if (g.timeLeft <= 0) { g.timeLeft = 0; expire(); }
     }
 
     // Speed: builds while you drive clean, surges on autopilot.
@@ -489,6 +678,7 @@
     }
     engineSet(g.speed, true);
     g.invuln = Math.max(0, g.invuln - dt);
+    g.magnet = Math.max(0, g.magnet - dt);
     g.shake = Math.max(0, g.shake - dt);
     g.flash = Math.max(0, g.flash - dt);
     if (g.autopilot > 0) {
@@ -520,6 +710,7 @@
     for (const o of g.objs) {
       o.d -= move;
       if (o.done || g.finished) continue;
+      if (g.magnet > 0 && o.type === 'title' && o.d < 34) o.lane = lerp(o.lane, g.px, clamp(dt * 5, 0, 1)); // AccuFee pulls titles in
       const same = Math.abs(g.px - o.lane) < 0.55;
       if (o.type === 'haz') {
         if (auto && o.d < 14) {
@@ -527,16 +718,25 @@
           add(150);
         } else if (Math.abs(g.px - o.lane) < 0.62 && o.d < 2.5 && o.d > -3) {
           o.done = true; o.gone = true; hit(o);
+        } else if (!o.near && o.d < -1.5) { // squeaked past right beside it
+          o.near = true;
+          if (!auto && Math.abs(g.px - o.lane) < 1.02) { g.closeCalls++; g.score += 50; pop('CLOSE CALL +50', '#7fd8fb', g.px); }
         }
       } else if (o.d < 3 && o.d > -3.5 && (same || auto)) {
         o.done = true; o.gone = true;
         if (o.type === 'title') {
           g.titles++; g.streak++;
+          const was = g.mult;
           g.mult = Math.min(5, 1 + Math.floor(g.streak / (role().streakStep || 4)));
+          if (g.mult > was) { g.bestMult = Math.max(g.bestMult, g.mult); toast(CALLOUTS[g.mult - 2], '#8dffb4', 1.2, false, `×${g.mult} streak`); }
+          else if (g.titles % 20 === 0) toast("It's like a little DMV Christmas!", '#8dffb4', 1.3);
           add(100 * g.mult, o.lane);
           burst(laneX(g.px, 1), playerY - 60, '#bfe0ff', 5);
           sfx.title(g.mult);
+        } else if (o.type === 'power') {
+          power(o);
         } else {
+          buzz(10);
           g.shields++;
           add(300, o.lane, '#ffc533');
           sfx.shield(g.shields);
@@ -580,7 +780,8 @@
     setText(el.score, 'score', fmt(g.score));
     const secs = Math.ceil(g.timeLeft);
     setText(el.time, 'time', String(secs));
-    el.time.classList.toggle('low', secs <= 10);
+    el.time.classList.toggle('low', secs <= 15);
+    setText($('buff'), 'buff', g.magnet > 0 ? `AccuFee™ ${Math.ceil(g.magnet)}s` : '');
     setText(el.stateName, 'sn', STATES[g.state]);
     setText(el.stateCount, 'sc', `${g.state + 1} / 50`);
     setText(el.mult, 'mult', g.mult > 1 ? `×${g.mult} STREAK` : '');
@@ -870,6 +1071,34 @@
     const h = roadHalf * 1.42 * s, sh = roadHalf * 0.46 * s, pw = Math.max(1.5, 9 * s);
     const finish = idx === STATES.length - 1, tough = !finish && !!FAST_FACTS[name];
     ctx.globalAlpha = clamp((SPAWN_D + 30 - d) / 30, 0, 1) * clamp((d + 9) / 5, 0, 1) * fadeIn;
+    if (!finish) { // a "Welcome to" sign on the shoulder (alternating sides) and a painted line across the road
+      const p2 = proj(d + 1.4), side = idx % 2 ? -1 : 1, note = ROUTE[idx][2];
+      ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.beginPath();
+      ctx.moveTo(cxAt(p2.s) - roadHalf * p2.s, p2.y); ctx.lineTo(cxAt(p2.s) + roadHalf * p2.s, p2.y);
+      ctx.lineTo(cx + roadHalf * s, p.y); ctx.lineTo(cx - roadHalf * s, p.y); ctx.closePath(); ctx.fill();
+      const bw = roadHalf * 1.55 * s, bh = roadHalf * 0.78 * s, x0 = cx + side * roadHalf * 1.17 * s - (side < 0 ? bw : 0), by = p.y - roadHalf * 1.3 * s;
+      for (const f of [0.22, 0.78]) {
+        ctx.fillStyle = hgrad(x0 + bw * f - pw / 2, x0 + bw * f + pw / 2, [[0, '#aab3c2'], [0.5, '#e6ebf2'], [1, '#6f7a8c']]);
+        ctx.fillRect(x0 + bw * f - pw / 2, by + bh * 0.5, pw, p.y - by - bh * 0.5);
+      }
+      oval('rgba(0,0,0,.22)', x0 + bw / 2, p.y, bw * 0.42, bw * 0.05);
+      ctx.fillStyle = vgrad(by, by + bh, tough ? [[0, '#f58a3c'], [1, '#c2531a']] : [[0, '#1e9a58'], [1, '#0e6a3a']]);
+      rr(x0, by, bw, bh, bh * 0.12); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1, 3 * s);
+      rr(x0 + 3 * s, by + 3 * s, bw - 6 * s, bh - 6 * s, bh * 0.09); ctx.stroke();
+      if (bh > 16) {
+        const mx = x0 + bw / 2;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = tough ? '#fff3d6' : '#c9f3da'; ctx.font = font(bh * 0.17, 600);
+        ctx.fillText(note || 'WELCOME TO', mx, by + bh * 0.2, bw * 0.88);
+        ctx.fillStyle = '#fff'; ctx.font = font(bh * 0.36);
+        ctx.fillText(name.toUpperCase(), mx, by + bh * 0.5, bw * 0.88);
+        ctx.fillStyle = tough ? '#fff3d6' : '#c9f3da'; ctx.font = font(bh * 0.17, 600);
+        ctx.fillText(tough ? `TOUGH STATE · 2× · ${idx + 1} OF 50` : `STATE ${idx + 1} OF 50`, mx, by + bh * 0.81, bw * 0.88);
+      }
+      ctx.globalAlpha = 1;
+      return;
+    }
     for (const side of [-1, 1]) {
       const x = cx + side * half;
       ctx.fillStyle = hgrad(x - pw / 2, x + pw / 2, [[0, '#aab3c2'], [0.5, '#e6ebf2'], [1, '#6f7a8c']]);
@@ -970,6 +1199,19 @@
       disc('#d9651a', 20, 32, 14); disc('#f58a3c', 20, 32, 10.500);
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.beginPath(); ctx.moveTo(14, 32); ctx.lineTo(18.500, 36.500); ctx.lineTo(26, 27); ctx.stroke();
+    } else if (o.type === 'power') {
+      const u = lane * 0.6 / 100, acc = o.kind === 'accufee', bob = Math.sin(t * 4 + o.d * 0.05) * 8;
+      ctx.scale(u, u);
+      oval('rgba(0,0,0,.26)', 0, 0, 40, 8);
+      ctx.translate(0, -92 + bob);
+      ctx.globalCompositeOperation = 'lighter'; glow(0, 0, 112, acc ? [70, 214, 138] : [245, 138, 60], 0.45); ctx.globalCompositeOperation = 'source-over';
+      disc(acc ? '#12703f' : '#a8480f', 2, 4, 46);
+      ctx.fillStyle = vgrad(-46, 46, acc ? [[0, '#8dffb4'], [1, '#1f9e5c']] : [[0, '#ffc08a'], [1, '#e0641a']]);
+      ctx.beginPath(); ctx.arc(0, 0, 46, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = font(acc ? 50 : 40); ctx.fillText(acc ? '$' : 'eQA', 0, acc ? -8 : 2);
+      if (acc) { ctx.font = font(15, 700); ctx.fillText('ACCUFEE', 0, 25); }
     } else {
       const u = lane * 0.62 / 100;
       const bob = Math.sin(t * 4 + o.d * 0.05) * 8, pulse = 0.5 + Math.sin(t * 6) * 0.5;
@@ -996,7 +1238,7 @@
 
   // Rear view of the player's car. Unit space: 100 wide, wheels on y = 0.
   function drawCar(px, lean, auto, blink, braking, t) {
-    const x = laneX(px, 1), u = (roadHalf * 2 / 3) * 0.8 / 100;
+    const x = laneX(px, 1), u = (roadHalf * 2 / 3) * 0.8 / 100, pt = paint();
     ctx.save();
     ctx.translate(x, playerY + Math.sin(t * 38) * 0.5);
     ctx.scale(u, u);
@@ -1019,16 +1261,16 @@
     ctx.fillStyle = '#1c2029'; ctx.fillRect(-46, -22, 3, 21); ctx.fillRect(-39, -22, 3, 21); ctx.fillRect(36, -22, 3, 21); ctx.fillRect(43, -22, 3, 21);
 
     // cabin + rear glass
-    ctx.fillStyle = vgrad(-72, -44, [[0, '#63cdf8'], [1, '#1b8fc6']]);
+    ctx.fillStyle = vgrad(-72, -44, [[0, pt.c[0]], [1, pt.c[1]]]);
     ctx.beginPath(); ctx.moveTo(-40, -44); ctx.quadraticCurveTo(-33, -70, -24, -71); ctx.lineTo(24, -71); ctx.quadraticCurveTo(33, -70, 40, -44); ctx.closePath(); ctx.fill();
     ctx.fillStyle = vgrad(-66, -46, [[0, '#0a1630'], [1, '#2c4f86']]);
     ctx.beginPath(); ctx.moveTo(-33, -47); ctx.quadraticCurveTo(-28, -65, -21, -66); ctx.lineTo(21, -66); ctx.quadraticCurveTo(28, -65, 33, -47); ctx.closePath(); ctx.fill();
     poly('rgba(255,255,255,.2)', [-18, -66, -6, -66, -16, -47, -29, -47]);
     // mirrors
-    ctx.fillStyle = '#1b8fc6'; rr(-49, -55, 10, 6, 2); ctx.fill(); rr(39, -55, 10, 6, 2); ctx.fill();
+    ctx.fillStyle = pt.c[1]; rr(-49, -55, 10, 6, 2); ctx.fill(); rr(39, -55, 10, 6, 2); ctx.fill();
 
     // body
-    ctx.fillStyle = vgrad(-48, -6, [[0, '#7fd8fb'], [0.22, '#25aae2'], [0.7, '#1580b6'], [1, '#0d5a86']]);
+    ctx.fillStyle = vgrad(-48, -6, [[0, pt.b[0]], [0.22, pt.b[1]], [0.7, pt.b[2]], [1, pt.b[3]]]);
     ctx.beginPath();
     ctx.moveTo(-52, -16); ctx.lineTo(-52, -36); ctx.quadraticCurveTo(-51, -46, -41, -47);
     ctx.lineTo(41, -47); ctx.quadraticCurveTo(51, -46, 52, -36); ctx.lineTo(52, -16);
@@ -1036,7 +1278,7 @@
     ctx.closePath(); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.35)'; rr(-40, -46, 80, 2, 1); ctx.fill();
     // racing stripes
-    ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillRect(-9, -47, 6, 23); ctx.fillRect(3, -47, 6, 23);
+    ctx.fillStyle = pt.s; ctx.fillRect(-9, -47, 6, 23); ctx.fillRect(3, -47, 6, 23);
     ctx.fillRect(-8, -71, 5, 5); ctx.fillRect(3, -71, 5, 5);
 
     // tail lights
@@ -1196,6 +1438,10 @@
     }
 
     if (live) {
+      if (g.magnet > 0) {
+        ctx.strokeStyle = `rgba(141,255,180,${0.5 + Math.sin(t * 10) * 0.25})`; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.ellipse(laneX(g.px, 1), playerY - 4, roadHalf * 0.36 + Math.sin(t * 6) * 4, roadHalf * 0.1, 0, 0, 7); ctx.stroke();
+      }
       drawCar(g.px, g.crashed ? g.spin : clamp((g.tx - g.px) * 0.3, -0.2, 0.2), auto, g.invuln > 0 && !auto && Math.floor(t * 14) % 2 === 0, g.shake > 0 || g.speed < 0.8, t);
       drawOverlays(t, auto);
     } else {
@@ -1261,17 +1507,42 @@
     else if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
   });
   document.addEventListener('visibilitychange', () => { // silence the engine when the page is in the background
+    if (document.hidden) { pause(); songPause(); } else if (mode !== 'paused') songPlay();
     if (!ac) return;
-    try { if (document.hidden) ac.suspend(); else ac.resume(); } catch (err) { /* ignore */ }
+    try { if (document.hidden) { pause(); ac.suspend(); } else ac.resume(); } catch (err) { /* ignore */ }
   });
   document.addEventListener('touchmove', (e) => { if (mode === 'play') e.preventDefault(); }, { passive: false });
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 
   $('play').addEventListener('click', start);
   $('again').addEventListener('click', start);
-  $('showBoard').addEventListener('click', () => { renderBoard($('menuBoard'), 10); el.menu.hidden = true; el.board.hidden = false; });
+  $('toMenu').addEventListener('click', toMenu);
+  $('quit').addEventListener('click', toMenu);
+  $('resume').addEventListener('click', resume);
+  $('pause').addEventListener('click', pause);
+  $('showHow').addEventListener('click', () => showHow(false));
+  let fbFrom = null;
+  const openFeedback = (from) => { fbFrom = from; from.hidden = true; $('fbStatus').textContent = ''; $('feedback').hidden = false; };
+  $('showFb').addEventListener('click', () => openFeedback(el.menu));
+  $('overFb').addEventListener('click', () => openFeedback(el.over));
+  $('fbCancel').addEventListener('click', () => { $('feedback').hidden = true; if (fbFrom) fbFrom.hidden = false; });
+  $('fbForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = $('fbText').value.trim();
+    if (!text) { $('fbStatus').textContent = 'Type an idea first.'; return; }
+    $('fbStatus').textContent = 'Sending…';
+    $('fbStatus').textContent = await sendFeedback(text, $('fbName').value.trim());
+    $('fbText').value = '';
+  });
+  $('howGo').addEventListener('click', () => {
+    store.set('c2c.seenHow', true);
+    $('howto').hidden = true;
+    if (howThenPlay) begin(); else el.menu.hidden = false;
+  });
+  $('showBoard').addEventListener('click', () => { fetchRemote(); renderBoard($('menuBoard'), 10); el.menu.hidden = true; el.board.hidden = false; });
   $('closeBoard').addEventListener('click', () => { el.board.hidden = true; el.menu.hidden = false; });
-  el.mute.addEventListener('click', () => { muted = !muted; store.set('c2c.muted', muted); paintMute(); unlockAudio(); });
+  el.mute.addEventListener('click', () => { muted = !muted; store.set('c2c.muted', muted); paintMute(); unlockAudio(); if (muted) songPause(); else if (mode !== 'paused') songPlay(); });
+  document.addEventListener('pointerdown', () => { if (mode !== 'paused') songPlay(); }); // browsers only allow sound after a tap
   $('saveForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const name = $('name').value.trim().toUpperCase().slice(0, 14) || 'PLAYER';
@@ -1302,7 +1573,33 @@
   }
   paintRoles();
 
-  $('chip').textContent = `50 states · ${RUN_SECONDS} seconds`;
+  let paintId = store.get('c2c.paint', PAINTS[0].id);
+  function paint() { return PAINTS.find((pt) => pt.id === paintId) || PAINTS[0]; }
+  PAINTS.forEach((pt) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', pt.name);
+    b.style.background = `linear-gradient(180deg, ${pt.b[0]}, ${pt.b[1]} 40%, ${pt.b[3]})`;
+    b.dataset.need = pt.need;
+    b.addEventListener('click', () => {
+      if (store.get('c2c.stars', 0) >= pt.need) { paintId = pt.id; store.set('c2c.paint', paintId); }
+      paintPaints(pt);
+    });
+    $('paints').appendChild(b);
+  });
+  function paintPaints(tapped) {
+    const have = store.get('c2c.stars', 0);
+    [...$('paints').children].forEach((b, i) => {
+      b.classList.toggle('on', PAINTS[i].id === paint().id);
+      b.classList.toggle('locked', have < PAINTS[i].need);
+    });
+    $('paintInfo').textContent = tapped && have < tapped.need
+      ? `${tapped.name}: earn ${tapped.need - have} more star${tapped.need - have === 1 ? '' : 's'} to unlock.`
+      : `${paint().name} · you have ${have} star${have === 1 ? '' : 's'}`;
+  }
+  paintPaints();
+  $('boardKicker').textContent = LEADERBOARD_URL ? EVENT : 'This device';
+  fetchRemote();
+  $('chip').textContent = `50 states · one ${RUN_SECONDS}-day temp tag`;
   $('eventTag').textContent = `${BRAND}™ by ${COMPANY} · ${EVENT}`;
   document.querySelectorAll('.brand').forEach((n) => { n.textContent = BRAND; });
   paintMute();
@@ -1318,5 +1615,5 @@
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
-  window.__c2c = { get run() { return g; }, get mode() { return mode; }, steer }; // test hook
+  window.__c2c = { get run() { return g; }, get mode() { return mode; }, steer, pause, resume }; // test hook
 })();

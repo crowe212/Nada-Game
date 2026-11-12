@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION whenever game files change.
-const VERSION = 'c2c-v5';
+const VERSION = 'c2c-v6';
 const FILES = ['./', 'index.html', 'style.css', 'game.js', 'manifest.webmanifest', 'fonts/barlow-condensed-latin-600-normal.woff2', 'fonts/barlow-condensed-latin-700-italic.woff2', 'fonts/barlow-condensed-latin-800-italic.woff2', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -10,6 +10,7 @@ self.addEventListener('activate', (e) => {
 });
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  if (e.request.headers.has('range') || new URL(e.request.url).origin !== location.origin) return; // let audio and other sites go straight to the network
   // Network first so updates show up; fall back to cache when offline.
   e.respondWith(
     fetch(e.request).then((res) => {
