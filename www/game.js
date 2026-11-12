@@ -9,7 +9,7 @@
   const CTA = 'Out-of-state titling, done in days, not months. Get a demo at dlr50.com.';
   const PLATE = 'DEALER';     // the car is the dealer; DLR50 is the set of tools they pick up
   const TEST_MODE = true;     // shows the Feedback buttons and the version label. Set to false for the show.
-  const BUILD = 'v15';
+  const BUILD = 'v16';
   const CHEAT_CODE = 'DLR50';  // typed on the menu: the next run is Full-Service the whole way (not counted on the leaderboard)         // shown at the bottom of the menu so you can tell which version a phone has loaded
   const RUN_SECONDS = 90;      // also the length of the temp tag, one day per second
   // Shared leaderboard: paste the web-app URL from tools/leaderboard-apps-script.gs here.
@@ -103,7 +103,7 @@
     { id: 'white', name: 'Temp Tag White', need: 2, b: ['#ffffff', '#eef1f6', '#c9d0dc', '#9aa3b3'], c: ['#f4f6fa', '#b9c1cf'], s: '#25aae2' },
     { id: 'beige', name: 'DMV Beige', need: 4, b: ['#f1e3c4', '#d9c49a', '#b89f72', '#8f7a55'], c: ['#e6d5b0', '#a8926a'], s: '#6b5a3c' },
     { id: 'navy', name: 'Midnight Navy', need: 7, b: ['#4a49a8', '#2b2a7a', '#1b1a58', '#101040'], c: ['#3a3990', '#17174f'], s: '#25aae2' },
-    { id: 'closer', name: 'The Closer', need: 0, needScore: 150000, wing: true, b: ['#ff9a9a', '#e5383b', '#a81822', '#6e0d14'], c: ['#ff7a7a', '#8f141d'], s: '#14161c' },
+    { id: 'closer', name: 'The Closer', need: 0, needScore: 150000, wing: true, b: ['#ffc08a', '#f58a3c', '#d9651a', '#9a430c'], c: ['#ffab66', '#c2531a'], s: '#23226b' },
     { id: 'gold', name: 'Safety Margin Gold', need: 10, b: ['#fff0a8', '#ffc533', '#e09a00', '#a86e00'], c: ['#ffe07a', '#c98a00'], s: '#23226b' },
   ];
   const STAR_AT = [15, 30, 50]; // states needed for 1, 2 and 3 stars

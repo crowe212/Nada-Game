@@ -67,7 +67,7 @@ The leaderboard has **Today** and **Whole event** tabs.
   unlock paint: Temp Tag White, DMV Beige, Midnight Navy, Safety Margin Gold.
 - **State signs** stand on the shoulder; a checkered arch marks the Florida finish.
 - **Pause button**, results stats and a personal-best banner.
-- **The Closer**: a red car with a rear wing, unlocked by scoring 150,000 in one run.
+- **The Closer**: an orange car with a rear wing, unlocked by scoring 150,000 in one run.
 - **Code `DLR50`**: typed into "Have a code?" on the menu, it makes the next run Full-Service the
   whole way. Code runs don't count for stars or the leaderboard. Change it in `CHEAT_CODE`.
 - **Damage matters**: each hit costs 7% of top speed and shows on the car (dents, a broken tail
