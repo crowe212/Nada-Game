@@ -26,6 +26,13 @@ function doGet() {
   return ContentService.createTextOutput(JSON.stringify(top)).setMimeType(ContentService.MimeType.JSON);
 }
 
+function sign_(id, name, score, states) {
+  let h = 2166136261;
+  const text = id + '|' + name + '|' + score + '|' + states + '|c2c-nada-27';
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36);
+}
+
 function doPost(e) {
   let ok = false;
   try {
@@ -40,7 +47,9 @@ function doPost(e) {
     const name = String(d.name || '').toUpperCase().replace(/[^A-Z0-9 ._-]/g, '').slice(0, 14).trim();
     const role = String(d.role || '').replace(/[^A-Za-z ]/g, '').slice(0, 16);
     const score = Math.round(Number(d.score)), states = Math.round(Number(d.states));
-    if (name && score >= 0 && score <= 500000 && states >= 1 && states <= 50) {
+    // Reject junk: the game's checksum must match and the score must be possible for that many states.
+    const okSig = String(d.sig || '') === sign_(d.id, String(d.name || ''), score, states);
+    if (name && okSig && score >= 0 && score <= 60000 + states * 4000 && states >= 1 && states <= 50) {
       const lock = LockService.getScriptLock(); lock.waitLock(5000);
       sheet_().appendRow([new Date(), Number(d.id) || Date.now(), name, role, score, states]);
       lock.releaseLock();

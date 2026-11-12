@@ -13,10 +13,9 @@ Florida, title all 50 states, and get on the leaderboard.
   LIEN ISSUE, MORE HOOPS, LATE PENALTY. Every hurdle you touch breaks. A hit slows you
   down, wipes your streak and damages the car; after 4 hits the car is totaled and the
   run ends early.
-- **Press your luck**: collect three shields for the JACKPOT. For a few seconds DLR50
-  goes Full-Service — you speed up, can't crash, and every hurdle is stamped APPROVED.
-  Hit a hurdle while holding shields and they are spent covering it (Safety Margin™):
-  no damage, but the jackpot count starts over.
+- **Shields** are Safety Margin™: each one covers a hit. The **Full-Service** badge hands a
+  stretch to DLR50's agency partners: you speed up, can't crash, and every hurdle is
+  stamped APPROVED.
 - **Roles change the game**: Title Clerk builds streaks faster, Controller starts with
   one shield, Finance has a higher top speed, GM's car takes one extra hit. The role
   also tailors the message on the results screen.
@@ -37,12 +36,20 @@ Florida, title all 50 states, and get on the leaderboard.
 One out-of-state deal moves from desk to desk as the car crosses the country. Each desk has its own
 hurdles, in the words prospects use on sales calls, and its own DLR50 fix as a power-up.
 
-| Leg | States | Hurdles | Power-up |
+| Leg | When | Hurdles | Power-up |
 | --- | --- | --- | --- |
-| F&I desk | 1–12 | WRONG FEE, GOOGLING IT, RE-SIGN, BLANK FORM | AccuFee™ |
-| Title desk | 13–25 | RETURNED, DUPE TITLE, MORE HOOPS, TITLE BRAND | eQA Corrections |
-| Controller's office | 26–38 | LATE PENALTY, WRITE-OFF, LIEN ISSUE, CHASING $$ | Verified Proof of Lien |
-| GM's office | 39–50 | NO ETA, ANGRY CALL, BAD REVIEW, IN THE DARK | Live Timeline (+5 days) |
+| F&I desk | first quarter of the clock | WRONG FEE, GOOGLING IT, RE-SIGN, BLANK FORM | AccuFee™ |
+| Title desk | second quarter | SENT BACK, LOST TITLE, MORE HOOPS, HIDDEN HISTORY | eQA Corrections ("FIX") |
+| Controller's office | third quarter | LATE PENALTY, WRITE-OFF, FUNDING HELD, UNDERCHARGED | Safety Margin™ top-up |
+| GM's office | last quarter | NO UPDATE, ANGRY CALL, BAD REVIEW, IN THE DARK | Live Timeline (+3 days) |
+
+The legs are slices of the clock, so every player who survives sees all four desks. The car is the
+dealer (plate `DEALER`); hurdles are stamped "THE OLD WAY"; round badges tagged DLR50 are the tools.
+Shields mean one thing: Safety Margin™, one hit covered per shield. Full-Service is its own badge
+that you choose to pick up.
+
+Before the show, set `TEST_MODE = false` at the top of `www/game.js` to hide the Feedback buttons
+and the version label.
 
 Your role's own desk pays double for titles. The results screen ends with a deal recap: how many
 hits each desk took and what DLR50 does about that desk's problem. All of this is in `DESKS` near

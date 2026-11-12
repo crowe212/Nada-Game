@@ -7,8 +7,9 @@
   const COMPANY = 'DLRdmv';   // the company
   const EVENT = 'NADA Show 2027';
   const CTA = 'Out-of-state titling, done in days, not months. Get a demo at dlr50.com.';
-  const PLATE = 'DLR50';      // text on the car's license plate
-  const BUILD = 'v13';         // shown at the bottom of the menu so you can tell which version a phone has loaded
+  const PLATE = 'DEALER';     // the car is the dealer; DLR50 is the set of tools they pick up
+  const TEST_MODE = true;     // shows the Feedback buttons and the version label. Set to false for the show.
+  const BUILD = 'v14';         // shown at the bottom of the menu so you can tell which version a phone has loaded
   const RUN_SECONDS = 90;      // also the length of the temp tag, one day per second
   // Shared leaderboard: paste the web-app URL from tools/leaderboard-apps-script.gs here.
   // Left empty, scores are kept on each device only.
@@ -46,30 +47,33 @@
   // Each desk has its own headaches (in the words prospects use on sales calls), its own DLR50 fix
   // as a power-up, and one line for the recap on the results screen. `from` is the position in ROUTE.
   const DESKS = [
-    { id: 'fni', name: 'F&I desk', short: 'F&I DESK', from: 0, tag: 'Quote it right. Sign it once.', power: 'accufee',
+    { id: 'fni', name: 'F&I desk', short: 'F&I DESK', lead: 'FIRST DESK', tag: 'Quote it right. Sign it once.', power: 'accufee',
       fix: 'AccuFee™ quotes exact fees and Smart Forms flag every signature.',
       haz: [{ label: 'WRONG FEE', msg: "Not $800 — it's actually $925!" }, { label: 'GOOGLING IT', msg: 'Googling state rules and hoping…' },
         { label: 'RE-SIGN', msg: 'Missed signature. Customer has to come back.' }, { label: 'BLANK FORM', msg: 'Signed a blank form. Compliance problem.' }] },
-    { id: 'title', name: 'Title desk', short: 'TITLE DESK', from: 12, tag: 'Build the packet. Beat the returns.', power: 'eqa',
+    { id: 'title', name: 'Title desk', short: 'TITLE DESK', lead: 'NEXT DESK', tag: 'Build the packet. Beat the returns.', power: 'eqa',
       fix: 'eQA Corrections show exactly what to fix before the packet is mailed.',
-      haz: [{ label: 'RETURNED', msg: 'Packet returned. Again.' }, { label: 'DUPE TITLE', msg: 'Duplicate title nightmare!' },
-        { label: 'MORE HOOPS', msg: 'More hoops to jump through!' }, { label: 'TITLE BRAND', msg: 'Unknown title brand on the trade!' }] },
-    { id: 'office', name: "Controller's office", short: 'CONTROLLER', from: 25, tag: 'Protect the profit.', power: 'lien',
+      haz: [{ label: 'SENT BACK', msg: 'Packet sent back. Again.' }, { label: 'LOST TITLE', msg: 'Trade-in title is missing. Order a duplicate.' },
+        { label: 'MORE HOOPS', msg: 'More hoops to jump through!' }, { label: 'HIDDEN HISTORY', msg: 'Salvage history nobody caught on the trade.' }] },
+    { id: 'office', name: "Controller's office", short: 'CONTROLLER', lead: 'NEXT DESK', tag: 'Protect the profit.', power: 'margin',
       fix: 'Safety Margin™ covers the unknowns, so there is nothing to write off.',
       haz: [{ label: 'LATE PENALTY', msg: 'Late penalty. Who eats the cost?' }, { label: 'WRITE-OFF', msg: 'Another write-off this month.' },
-        { label: 'LIEN ISSUE', msg: 'Lien not perfected. Funding at risk.' }, { label: 'CHASING $$', msg: 'Chasing the customer for a check.' }] },
-    { id: 'gm', name: "GM's office", short: "GM'S OFFICE", from: 38, tag: 'Keep the customer happy.', power: 'timeline',
+        { label: 'FUNDING HELD', msg: 'Lender is holding funding.' }, { label: 'UNDERCHARGED', msg: 'Chasing the customer for a check.' }] },
+    { id: 'gm', name: "GM's office", short: "GM'S OFFICE", lead: 'ESCALATED TO', tag: 'The customer calls. It lands on the GM.', power: 'timeline',
       fix: 'A live timeline answers “where are my plates?” in seconds.',
-      haz: [{ label: 'NO ETA', msg: '“Where are my plates?!”' }, { label: 'ANGRY CALL', msg: 'Customer on line one. Again.' },
+      haz: [{ label: 'NO UPDATE', msg: '“Where are my plates?!”' }, { label: 'ANGRY CALL', msg: 'Customer on line one. Again.' },
         { label: 'BAD REVIEW', msg: 'One star: “still no plates.”' }, { label: 'IN THE DARK', msg: 'Weeks with zero visibility.' }] },
   ];
-  const deskIndex = (stateIdx) => { let i = 0; while (i < DESKS.length - 1 && stateIdx >= DESKS[i + 1].from) i++; return i; };
+  // Every player sees all four desks: the legs are equal slices of the clock, not of the map.
+  const LEG_SECONDS = RUN_SECONDS / DESKS.length;
+  const deskAtTime = (elapsed) => clamp(Math.floor(elapsed / LEG_SECONDS), 0, DESKS.length - 1);
   // How each power-up looks and what it is called.
   const POWERS = {
     accufee: { a: '#8dffb4', b: '#1f9e5c', dark: '#12703f', glow: [70, 214, 138], text: '$', small: 'ACCUFEE' },
-    eqa: { a: '#ffc08a', b: '#e0641a', dark: '#a8480f', glow: [245, 138, 60], text: 'eQA', small: '' },
-    lien: { a: '#d6c2ff', b: '#7a4fd6', dark: '#4b2c96', glow: [150, 110, 255], text: 'LIEN', small: 'VERIFIED' },
+    eqa: { a: '#ffc08a', b: '#e0641a', dark: '#a8480f', glow: [245, 138, 60], text: 'FIX', small: 'eQA' },
+    margin: { a: '#fff0a8', b: '#f59a00', dark: '#9a6200', glow: [255, 190, 40], text: '×3', small: 'SAFETY MARGIN' },
     timeline: { a: '#a8e4ff', b: '#1b8fc6', dark: '#0d5a86', glow: [60, 170, 230], text: 'ETA', small: 'TIMELINE' },
+    full: { a: '#5b5ac4', b: '#23226b', dark: '#101040', glow: [120, 120, 255], text: 'FULL', small: 'SERVICE' },
   };
 
   // States prospects call the hardest. They get more obstacles and double state-line points,
@@ -106,7 +110,7 @@
   const ROLES = [
     { id: 'clerk', label: 'Title Clerk', desk: 1, perk: 'Streak bonus builds faster. Titles count double at the Title desk.', streakStep: 3,
       line: 'Pre-filled forms and clear checklists mean fewer returns.' },
-    { id: 'office', label: 'Controller', desk: 2, perk: "Start with one shield. Titles count double in the Controller's office.", startShields: 1,
+    { id: 'office', label: 'Controller', desk: 2, perk: "Start with one Safety Margin shield. Titles count double in the Controller's office.", startShields: 1,
       line: 'Fewer write-offs and full oversight of every deal.' },
     { id: 'finance', label: 'Finance', desk: 0, perk: 'Higher top speed. Titles count double at the F&I desk.', speed: 1.1,
       line: 'Exact fees at the point of sale, without slowing the deal.' },
@@ -155,7 +159,7 @@
   const SPAWN_D = 120;       // distance at which things appear
   const BASE_V = 38;         // world units / second at speed 1
   const ROW_GAP = 36;        // distance between rows of objects
-  const STATE_LEN = 86;      // distance between state lines
+  const STATE_LEN = 96;      // distance between state lines
   const SHIELD_PATH = new Path2D('M12 2 21 5v6c0 6-4 10-9 12C7 21 3 17 3 11V5z');
   const DISPLAY = '"Barlow Condensed", "Arial Narrow", system-ui, sans-serif';
   const font = (px, weight = 800) => `${weight >= 700 ? 'italic ' : ''}${weight} ${px}px ${DISPLAY}`;
@@ -364,17 +368,17 @@
       t: 0, intro: 1.2, timeLeft: RUN_SECONDS, dist: 0, score: 0,
       lane: 1, tx: 1, px: 1, speed: 0.45, clean: 0,
       health: MAX_HITS + (role().extraHits || 0), maxHealth: MAX_HITS + (role().extraHits || 0), crashed: false, expired: false, spin: 0, hint: 4,
-      deskHits: [0, 0, 0, 0], deskTitles: [0, 0, 0, 0],
+      deskHits: [0, 0, 0, 0], deskTitles: [0, 0, 0, 0], desk: 0, elapsed: 0, nextFull: 18, fullRuns: 0,
       magnet: 0, nextPower: 7, nextTruck: 5, plazaAt: -1, lmDone: -1, skid: 0, toldDamage: false, closeCalls: 0, hits: 0, bestMult: 1, warned: false,
       curve: 0, curveTarget: 0, curveLeft: 320, heading: 0,
       state: 0, toLine: STATE_LEN, shields: role().startShields || 0, autopilot: 0, jackpots: 0,
       streak: 0, mult: 1, titles: 0, invuln: 0, shake: 0, flash: 0,
       objs: [], scen: [], parts: [], toasts: [], queue: [],
-      rowAcc: 0, scenAcc: 0, rowN: 0, lastTwo: false, nextShield: 4,
+      rowAcc: 0, scenAcc: 0, rowN: 0, lastTwo: false, nextShield: 6,
       finished: false, endDelay: 0, sinceLine: 9,
     };
-    toast('NorCal → Orlando. GO!', '#fff', 1.9, false, 'Title all 50 before the temp tag expires');
-    toast(`FIRST STOP: ${DESKS[0].name.toUpperCase()}`, '#ffc533', 2, false, DESKS[0].tag);
+    toast("You're the dealer. GO!", '#fff', 2, false, 'Dodge the old way. Grab the DLR50 tools.');
+    toast(`${DESKS[0].lead}: ${DESKS[0].name.toUpperCase()}`, '#ffc533', 2.2, false, DESKS[0].tag + (role().desk === 0 ? ' Your desk: ×2.' : ''));
   }
 
   let howThenPlay = false;
@@ -453,7 +457,7 @@
       : nextPaint ? `${nextPaint.need - after} more star${nextPaint.need - after === 1 ? '' : 's'} unlocks ${nextPaint.name} paint.` : '';
     // Deal recap: how each desk fared, and what DLR50 does about it
     const recap = $('recap'); recap.textContent = '';
-    const reached = deskIndex(g.state);
+    const reached = g.state >= STATES.length - 1 ? DESKS.length - 1 : g.desk;
     DESKS.forEach((dk, i) => {
       const row = document.createElement('div'), head = document.createElement('b'), stat = document.createElement('span'), fix = document.createElement('p');
       const hits = g.deskHits[i];
@@ -464,10 +468,11 @@
       row.append(head, stat, fix);
       recap.appendChild(row);
     });
-    $('cta').textContent = `${role().line} Get a demo at dlr50.com.`;
+    $('cta').textContent = role().line;
     $('overBoard').hidden = true; // the top scores appear once this score is saved
     fetchRemote();
     $('saveForm').hidden = false;
+    $('saveNote').hidden = false;
     $('name').value = store.get('c2c.name', '');
     renderBoard($('overBoard'), 3, 'today');
     el.over.hidden = false;
@@ -520,9 +525,18 @@
     fetch(LEADERBOARD_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(entry) })
       .then(fetchRemote).catch(() => {});
   }
+  // Keeps casual junk off the public board: a checksum the sheet's script verifies, and a small name filter.
+  function sign(x) {
+    let h = 2166136261;
+    for (const ch of `${x.id}|${x.name}|${x.score}|${x.states}|c2c-nada-27`) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+    return (h >>> 0).toString(36);
+  }
+  const BLOCKED = /fuck|shit|bitch|cunt|dick|cock|pussy|nigg|fag|rape|nazi|asshole/i;
+  const cleanName = (n) => (BLOCKED.test(n.replace(/[^a-z]/gi, '')) ? 'PLAYER' : n);
   function saveScore(name) {
     const list = scores();
-    const entry = { name, role: role().label, score: Math.round(g.score), states: g.state + 1, id: Date.now() };
+    const entry = { name: cleanName(name), role: role().label, score: Math.round(g.score), states: g.state + 1, id: Date.now() };
+    entry.sig = sign(entry);
     list.push(entry);
     list.sort((a, b) => b.score - a.score);
     store.set('c2c.scores', list.slice(0, 25));
@@ -582,7 +596,7 @@
   function spawnRow(d) {
     g.rowN++;
     if (g.rowN <= 1) return;
-    const elapsed = RUN_SECONDS - g.timeLeft;
+    const elapsed = g.elapsed, rowDesk = DESKS[deskAtTime(g.elapsed + 2)]; // the desk on duty when this row arrives
     const diff = clamp(Math.max(elapsed / RUN_SECONDS, g.state / (STATES.length - 1)), 0, 1);
     const calm = elapsed < 7; // opening stretch: titles and shields only
     const at = Math.min(STATES.length - 1, Math.floor(g.state + 1 - g.toLine / STATE_LEN + d / STATE_LEN));
@@ -601,11 +615,11 @@
       return;
     }
 
-    let nH = calm || Math.random() < (tough ? 0.08 : 0.28 - diff * 0.2) ? 0 : (!g.lastTwo && Math.random() < 0.04 + diff * diff * 0.42 + (tough ? 0.1 : 0) ? 2 : 1);
+    let nH = calm || Math.random() < (tough ? 0.08 : 0.28 - diff * 0.2) ? 0 : (!g.lastTwo && Math.random() < 0.04 + diff * diff * 0.52 + (tough ? 0.1 : 0) ? 2 : 1);
     if (truck) nH = Math.min(nH, 1); // never let a truck plus a row close every lane
     const free = lanes.slice(nH);
     g.lastTwo = nH === 2;
-    for (let i = 0; i < nH; i++) g.objs.push({ type: 'haz', lane: lanes[i], d, hz: pick(DESKS[deskIndex(at)].haz) });
+    for (let i = 0; i < nH; i++) g.objs.push({ type: 'haz', lane: lanes[i], d, hz: pick(rowDesk.haz) });
 
     const taken = new Set();
     if (!truck && !calm && elapsed > 12 && nH <= 1 && --g.nextTruck <= 0) { // slow snail-mail truck that lingers in its lane
@@ -618,13 +632,18 @@
     if (--g.nextShield <= 0 && g.autopilot <= 0 && open() != null) {
       const l = open(); taken.add(l);
       g.objs.push({ type: 'shield', lane: l, d });
-      g.nextShield = 4 + ((Math.random() * 3) | 0);
+      g.nextShield = 14 + ((Math.random() * 6) | 0);
     }
     if (--g.nextPower <= 0 && open() != null) { // product power-ups; repairs only show up when the car is damaged
       const l = open(); taken.add(l);
       const damaged = g.health < g.maxHealth;
-      g.objs.push({ type: 'power', kind: damaged && Math.random() < 0.6 ? 'eqa' : DESKS[deskIndex(at)].power, lane: l, d });
+      g.objs.push({ type: 'power', kind: damaged && Math.random() < 0.6 ? 'eqa' : rowDesk.power, lane: l, d });
       g.nextPower = damaged ? 6 + ((Math.random() * 3) | 0) : 11 + ((Math.random() * 6) | 0);
+    }
+    if (--g.nextFull <= 0 && g.autopilot <= 0 && open() != null) { // hand this stretch to Full-Service: a choice, not luck
+      const l = open(); taken.add(l);
+      g.objs.push({ type: 'power', kind: 'full', lane: l, d });
+      g.nextFull = 22 + ((Math.random() * 8) | 0);
     }
     for (const l of free) {
       if (!taken.has(l) && Math.random() < 0.6) g.objs.push({ type: 'title', lane: l, d });
@@ -649,11 +668,11 @@
     smash(o);
     const x = laneX(g.px, 1);
     if (g.invuln > 0) return; // still recovering from the last one: it breaks, but no extra damage
-    g.deskHits[deskIndex(g.state)]++;
-    if (g.shields > 0) { // Safety Margin: the shields are spent covering the hit
-      g.shields = 0; g.invuln = 0.6; g.shake = 0.15;
+    g.deskHits[g.desk]++;
+    if (g.shields > 0) { // Safety Margin: one shield covers one hit
+      g.shields--; g.invuln = 0.6; g.shake = 0.15;
       burst(x, playerY - 30, '#ffc533', 16);
-      toast('Safety Margin™ covered it', '#ffc533', 1.4, false, 'Rainy-day fund spent');
+      toast('Safety Margin™ covered it', '#ffc533', 1.4, false, g.shields ? `${g.shields} shield${g.shields > 1 ? 's' : ''} left` : 'No shields left');
       sfx.cover();
       return;
     }
@@ -669,7 +688,7 @@
 
   function expire() {
     g.finished = true; g.expired = true; g.endDelay = 2; g.autopilot = 0;
-    toast('TAG EXPIRED!', '#ff6b6b', 2, true, 'Days, not months, remember?');
+    toast('TAG EXPIRED!', '#ff6b6b', 2, true, 'The old way takes months.');
     buzz([60, 40, 60]);
     sfx.end();
   }
@@ -677,7 +696,7 @@
   function crash() {
     buzz([90, 40, 180]);
     g.finished = true; g.crashed = true; g.endDelay = 2.2; g.autopilot = 0; g.shake = 0.7;
-    toast('TOTALED!', '#ff6b6b', 2.2, true, 'Too much red tape.');
+    toast('TOTALED!', '#ff6b6b', 2.2, true, 'The old way wrecked this deal.');
     burst(laneX(g.px, 1), playerY - 30, '#ffb347', 30);
     sfx.crash();
   }
@@ -687,12 +706,14 @@
     if (o.kind === 'accufee') {
       g.magnet = 7; add(200, o.lane, '#8dffb4');
       toast('AccuFee™', '#8dffb4', 1.7, false, 'Every title, down to the penny');
-    } else if (o.kind === 'lien') {
-      add(750, o.lane, '#d6c2ff');
-      toast('Verified Proof of Lien', '#d6c2ff', 1.7, false, 'Lender audit satisfied. Deal funded.');
+    } else if (o.kind === 'full') {
+      jackpot();
+    } else if (o.kind === 'margin') {
+      g.shields = 3; add(300, o.lane, '#ffc533');
+      toast('Safety Margin™ topped up', '#ffc533', 1.7, false, 'Three hits covered.');
     } else if (o.kind === 'timeline') {
-      g.timeLeft = Math.min(RUN_SECONDS, g.timeLeft + 5); add(200, o.lane, '#a8e4ff');
-      toast('Live Timeline', '#a8e4ff', 1.7, false, 'No more waiting in the dark. +5 days');
+      g.timeLeft = Math.min(RUN_SECONDS, g.timeLeft + 3); add(200, o.lane, '#a8e4ff');
+      toast('Live Timeline', '#a8e4ff', 1.7, false, 'No more waiting in the dark. +3 days');
     } else if (g.health < g.maxHealth) {
       g.health++;
       toast('eQA Corrections', '#ffb36b', 1.7, false, 'Fixed before it went out. Top speed restored.');
@@ -704,11 +725,11 @@
 
   function jackpot() {
     buzz([30, 30, 30, 30, 90]);
-    g.shields = 0; g.jackpots++;
+    g.jackpots++;
     g.autopilot = AUTOPILOT_SECONDS; g.invuln = 0; g.flash = 0.5;
-    add(2000);
-    toast('JACKPOT!', '#ffc533', 1.3, true);
-    toast(`${BRAND}™ FULL-SERVICE`, '#ffc533', AUTOPILOT_SECONDS, false, 'We do everything else.');
+    add(1000);
+    toast('FULL-SERVICE!', '#ffc533', 1.2, true);
+    toast(`${BRAND}™ FULL-SERVICE`, '#ffc533', AUTOPILOT_SECONDS, false, 'Our agency partners take this stretch.');
     burst(W / 2, H * 0.42, '#ffc533', 46);
     burst(W / 2, H * 0.42, '#fff3b0', 20);
     sfx.jackpot();
@@ -720,11 +741,6 @@
     g.toLine += STATE_LEN;
     const fact = FAST_FACTS[STATES[g.state]];
     add(fact ? 500 : 250);
-    const desk = DESKS[deskIndex(g.state)];
-    if (desk.from === g.state) { // the deal moves to the next desk
-      toast(`DEAL PASSED TO: ${desk.name.toUpperCase()}`, '#ffc533', 2.3, false, desk.tag + (deskIndex(g.state) === role().desk ? ' Your desk: titles ×2.' : ''));
-      g.flash = 0.25;
-    }
     if (fact && g.state < STATES.length - 1) {
       toast(`FAST FACT · ${STATES[g.state].toUpperCase()}`, '#7fd8fb', 2.2, false, fact);
     } else if (MILESTONES[g.state + 1]) {
@@ -751,6 +767,12 @@
       g.intro -= dt;
     } else {
       g.timeLeft -= dt;
+      g.elapsed += dt;
+      const dNow = deskAtTime(g.elapsed);
+      if (dNow !== g.desk) { // the next desk takes over
+        g.desk = dNow; g.flash = 0.25;
+        toast(`${DESKS[dNow].lead}: ${DESKS[dNow].name.toUpperCase()}`, '#ffc533', 2.4, false, DESKS[dNow].tag + (dNow === role().desk ? ' Your desk: ×2.' : ''));
+      }
       if (!g.warned && g.timeLeft <= 15) { g.warned = true; toast('Temp tag expires in 15 days!', '#ff9a9a', 1.8, false, 'Floor it.'); }
       if (g.timeLeft <= 0) { g.timeLeft = 0; expire(); }
     }
@@ -854,7 +876,7 @@
           g.mult = Math.min(5, 1 + Math.floor(g.streak / (role().streakStep || 4)));
           if (g.mult > was) { g.bestMult = Math.max(g.bestMult, g.mult); toast(CALLOUTS[g.mult - 2], '#8dffb4', 1.2, false, `×${g.mult} streak`); }
           else if (g.titles % 20 === 0) toast("It's like a little DMV Christmas!", '#8dffb4', 1.3);
-          const di = deskIndex(g.state), home = di === role().desk; // your own desk pays double
+          const di = g.desk, home = di === role().desk; // your own desk pays double
           g.deskTitles[di]++;
           add(100 * g.mult * (home ? 2 : 1), o.lane, home ? '#ffc533' : '#fff');
           burst(laneX(g.px, 1), playerY - 60, '#bfe0ff', 5);
@@ -863,12 +885,12 @@
           power(o);
         } else {
           buzz(10);
-          g.shields++;
+          const had = g.shields;
+          g.shields = Math.min(3, g.shields + 1);
           add(300, o.lane, '#ffc533');
           sfx.shield(g.shields);
           burst(laneX(g.px, 1), playerY - 60, '#ffc533', 12);
-          if (g.shields >= 3) jackpot();
-          else if (g.shields === 2) toast('One more shield — press your luck!', '#ffc533', 1.1);
+          if (!had) toast('Safety Margin™', '#ffc533', 1.5, false, 'Each shield covers one hit.');
         }
       }
     }
@@ -912,7 +934,7 @@
     $('buff').classList.toggle('bad', g.magnet <= 0 && lost > 0);
     setText(el.stateName, 'sn', STATES[g.state]);
     setText(el.stateCount, 'sc', `${g.state + 1} / 50`);
-    const dk = deskIndex(g.state);
+    const dk = g.desk;
     setText(el.mult, 'mult', g.mult > 1 ? `×${g.mult} STREAK` : DESKS[dk].short + (dk === role().desk ? ' ×2' : ''));
     if (hudCache.health !== g.health) {
       hudCache.health = g.health;
@@ -920,12 +942,12 @@
       $('health').classList.toggle('low', g.health === 1);
     }
     const auto = g.autopilot > 0;
-    const shown = auto ? 3 : g.shields;
+    const shown = g.shields;
     if (hudCache.slots !== shown) {
       hudCache.slots = shown;
       [...el.slots.children].forEach((c, i) => c.classList.toggle('on', i < shown));
     }
-    el.slots.classList.toggle('jackpot', auto);
+
     if (hudCache.auto !== auto) {
       hudCache.auto = auto;
       el.banner.hidden = true;
@@ -1451,6 +1473,11 @@
         ctx.restore();
       };
       stripes(-34, 15, 3);
+      if (!ok && lane > 38 && o.hz !== CLOSED) { // every hurdle is labelled as the old way of doing things
+        ctx.fillStyle = '#fff'; rr(-33, -33.500, 66, 14, 2); ctx.fill();
+        ctx.fillStyle = '#8a1a22'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = font(11, 700);
+        ctx.fillText('THE OLD WAY', 0, -26, 62);
+      }
       stripes(-80, 38, 5);
       // label plate
       ctx.fillStyle = ok ? '#f0fff5' : '#fff'; rr(-43, -74.500, 86, 27, 3); ctx.fill();
@@ -1482,7 +1509,7 @@
       ctx.fillStyle = vgrad(-56, -30, [[0, '#4cc4f5'], [1, '#1c93cc']]); ctx.fillRect(-44, -56, 84, 27);
       ctx.restore();
       ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = font(19);
-      if (lane > 30) ctx.fillText('TITLE', -2, -42);
+      if (lane > 30) ctx.fillText('FILED', -2, -42);
       ctx.fillStyle = '#b3c1dc';
       rr(-34, -18, 64, 7, 3.500); ctx.fill(); rr(-34, -3, 64, 7, 3.500); ctx.fill(); rr(-34, 12, 34, 7, 3.500); ctx.fill();
       disc('#d9651a', 20, 32, 14); disc('#f58a3c', 20, 32, 10.500);
@@ -1501,6 +1528,11 @@
       ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = font(pw.text.length > 1 ? 34 : 50); ctx.fillText(pw.text, 0, pw.small ? -7 : 2, 80);
       if (pw.small) { ctx.font = font(14, 700); ctx.fillText(pw.small, 0, 24, 78); }
+      if (lane > 34) { // tools are tagged as DLR50's
+        ctx.fillStyle = '#17174f'; rr(-27, -72, 54, 19, 9.500); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = font(13); ctx.fillText(BRAND, 0, -62);
+      }
     } else {
       const u = lane * 0.62 / 100;
       const bob = Math.sin(t * 4 + o.d * 0.05) * 8, pulse = 0.5 + Math.sin(t * 6) * 0.5;
@@ -1864,6 +1896,7 @@
     saveScore(name);
     $('name').blur();
     $('saveForm').hidden = true;
+    $('saveNote').hidden = true;
     $('overBoard').hidden = false;
     renderBoard($('overBoard'), 3, 'today');
   });
@@ -1919,6 +1952,7 @@
     + `${songNote ? ' · ' + songNote : ''} · effects ${ac ? ac.state : 'not started'} · ${muted ? 'muted' : 'sound on'}`;
   $('build').textContent = BUILD;
   $('build').addEventListener('click', () => { $('build').textContent = audioStatus(); });
+  if (!TEST_MODE) { for (const id of ['showFb', 'overFb', 'build']) $(id).hidden = true; }
   $('boardKicker').textContent = LEADERBOARD_URL ? EVENT : 'This device';
   const paintTabs = () => [...$('boardTabs').children].forEach((b) => b.classList.toggle('on', b.dataset.scope === boardScope));
   [...$('boardTabs').children].forEach((b) => b.addEventListener('click', () => { boardScope = b.dataset.scope; paintTabs(); renderBoard($('menuBoard'), 10); }));
