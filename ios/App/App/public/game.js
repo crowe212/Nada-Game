@@ -9,7 +9,7 @@
   const CTA = 'Out-of-state titling, done in days, not months. Get a demo at dlr50.com.';
   const PLATE = 'DEALER';     // the car is the dealer; DLR50 is the set of tools they pick up
   const TEST_MODE = true;     // shows the Feedback buttons and the version label. Set to false for the show.
-  const BUILD = 'v16';
+  const BUILD = 'v17';
   const CHEAT_CODE = 'DLR50';  // typed on the menu: the next run is Full-Service the whole way (not counted on the leaderboard)         // shown at the bottom of the menu so you can tell which version a phone has loaded
   const RUN_SECONDS = 90;      // also the length of the temp tag, one day per second
   // Shared leaderboard: paste the web-app URL from tools/leaderboard-apps-script.gs here.
@@ -71,7 +71,7 @@
   // How each power-up looks and what it is called.
   const POWERS = {
     accufee: { a: '#8dffb4', b: '#1f9e5c', dark: '#12703f', glow: [70, 214, 138], text: '$', small: 'ACCUFEE' },
-    eqa: { a: '#ffc08a', b: '#e0641a', dark: '#a8480f', glow: [245, 138, 60], text: 'FIX', small: 'eQA' },
+    eqa: { a: '#d6c2ff', b: '#7a4fd6', dark: '#4b2c96', glow: [150, 110, 255], text: 'FIX', small: 'eQA' },
     margin: { a: '#fff0a8', b: '#f59a00', dark: '#9a6200', glow: [255, 190, 40], text: '×3', small: 'SAFETY MARGIN' },
     timeline: { a: '#a8e4ff', b: '#1b8fc6', dark: '#0d5a86', glow: [60, 170, 230], text: 'ETA', small: 'TIMELINE' },
     full: { a: '#5b5ac4', b: '#23226b', dark: '#101040', glow: [120, 120, 255], text: 'FULL', small: 'SERVICE' },
@@ -667,7 +667,7 @@
     const x = laneX(o.lane, 1), y = playerY - 40;
     for (let i = 0; i < 14; i++) {
       g.parts.push({ rect: true, x: x + rnd(-34, 34), y: y + rnd(-26, 14), vx: rnd(-260, 260), vy: rnd(-460, -140), life: rnd(0.6, 1), max: 1,
-        color: pick(['#e5383b', '#ffffff', '#e5383b', '#566072']), w: rnd(12, 28), h: rnd(5, 9), rot: rnd(0, 6), vr: rnd(-14, 14) });
+        color: pick(['#f58a3c', '#ffffff', '#f58a3c', '#566072']), w: rnd(12, 28), h: rnd(5, 9), rot: rnd(0, 6), vr: rnd(-14, 14) });
     }
     sfx.smash();
   }
@@ -687,16 +687,16 @@
     g.health--; g.hits++; g.streak = 0; g.mult = 1;
     buzz(70);
     g.speed = 0.4; g.clean *= 0.5; g.invuln = 0.8; g.shake = 0.4;
-    burst(x, playerY - 30, '#ff5a5f', 18);
+    burst(x, playerY - 30, '#ff9a3c', 18);
     if (g.health <= 0) return crash();
-    toast(o.hz.msg, '#ff9a9a', 1.6, false, g.health === 1 ? 'One more hit and the car is totaled!' : g.toldDamage ? '' : 'Damage slows you down. Grab an eQA to repair.');
+    toast(o.hz.msg, '#ffc08a', 1.6, false, g.health === 1 ? 'One more hit and the car is totaled!' : g.toldDamage ? '' : 'Damage slows you down. Grab an eQA to repair.');
     g.toldDamage = true;
     sfx.hit();
   }
 
   function expire() {
     g.finished = true; g.expired = true; g.endDelay = 2; g.autopilot = 0;
-    toast('TAG EXPIRED!', '#ff6b6b', 2, true, 'The old way takes months.');
+    toast('TAG EXPIRED!', '#ff9a3c', 2, true, 'The old way takes months.');
     buzz([60, 40, 60]);
     sfx.end();
   }
@@ -704,7 +704,7 @@
   function crash() {
     buzz([90, 40, 180]);
     g.finished = true; g.crashed = true; g.endDelay = 2.2; g.autopilot = 0; g.shake = 0.7;
-    toast('TOTALED!', '#ff6b6b', 2.2, true, 'The old way wrecked this deal.');
+    toast('TOTALED!', '#ff9a3c', 2.2, true, 'The old way wrecked this deal.');
     burst(laneX(g.px, 1), playerY - 30, '#ffb347', 30);
     sfx.crash();
   }
@@ -724,10 +724,10 @@
       toast('Live Timeline', '#a8e4ff', 1.7, false, 'No more waiting in the dark. +3 days');
     } else if (g.health < g.maxHealth) {
       g.health++;
-      toast('eQA Corrections', '#ffb36b', 1.7, false, 'Fixed before it went out. Top speed restored.');
+      toast('eQA Corrections', '#d6c2ff', 1.7, false, 'Fixed before it went out. Top speed restored.');
     } else {
-      add(500, o.lane, '#ffb36b');
-      toast('eQA Corrections', '#ffb36b', 1.5, false, 'Clean packet bonus');
+      add(500, o.lane, '#d6c2ff');
+      toast('eQA Corrections', '#d6c2ff', 1.5, false, 'Clean packet bonus');
     }
   }
 
@@ -781,7 +781,7 @@
         g.desk = dNow; g.flash = 0.25;
         toast(`${DESKS[dNow].lead}: ${DESKS[dNow].name.toUpperCase()}`, '#ffc533', 2.4, false, DESKS[dNow].tag + (dNow === role().desk ? ' Your desk: ×2.' : ''));
       }
-      if (!g.warned && g.timeLeft <= 15) { g.warned = true; toast('Temp tag expires in 15 days!', '#ff9a9a', 1.8, false, 'Floor it.'); }
+      if (!g.warned && g.timeLeft <= 15) { g.warned = true; toast('Temp tag expires in 15 days!', '#ffc08a', 1.8, false, 'Floor it.'); }
       if (g.timeLeft <= 0) { g.timeLeft = 0; expire(); }
     }
 
@@ -1422,10 +1422,10 @@
       ctx.fillText('DMV · TAKE A NUMBER', cx, p.y - h - rh * 0.5, half * 1.8);
     }
     for (let l = 0; l < 3; l++) {
-      const x = laneX(l, s), on = l === o.open, y = p.y - h + rh * 0.34, c = on ? [80, 255, 150] : [255, 70, 70];
+      const x = laneX(l, s), on = l === o.open, y = p.y - h + rh * 0.34, c = on ? [80, 255, 150] : [255, 150, 40];
       ctx.globalCompositeOperation = 'lighter'; glow(x, y, rh * 0.7, c, 0.6); ctx.globalCompositeOperation = 'source-over';
       disc(rgb(mix(c, [255, 255, 255], 0.3)), x, y, Math.max(1.5, rh * 0.15));
-      if (rh > 14) { ctx.fillStyle = on ? '#b9ffd3' : '#ffc0c0'; ctx.font = font(rh * 0.26, 700); ctx.fillText(on ? 'OPEN' : 'CLOSED', x, y + rh * 0.42); }
+      if (rh > 14) { ctx.fillStyle = on ? '#b9ffd3' : '#ffd9a8'; ctx.font = font(rh * 0.26, 700); ctx.fillText(on ? 'OPEN' : 'CLOSED', x, y + rh * 0.42); }
     }
     ctx.globalAlpha = 1;
   }
@@ -1461,7 +1461,7 @@
       const u = lane * 0.9 / 100, ok = !!o.approved;
       ctx.scale(u, u);
       oval('rgba(0,0,0,.3)', 0, 0, 52, 8);
-      if (!ok) { ctx.globalCompositeOperation = 'lighter'; glow(0, -6, 70, [255, 60, 60], 0.22); ctx.globalCompositeOperation = 'source-over'; }
+      if (!ok) { ctx.globalCompositeOperation = 'lighter'; glow(0, -6, 70, [255, 140, 40], 0.22); ctx.globalCompositeOperation = 'source-over'; }
       // A-frame legs
       for (const sx of [-1, 1]) {
         poly('#39414f', [sx * 38, -78, sx * 44, -78, sx * 50, 0, sx * 43, 0]);
@@ -1472,7 +1472,7 @@
         ctx.fillStyle = ok ? vgrad(y, y + h, [[0, '#46d68a'], [1, '#1f9e5c']]) : vgrad(y, y + h, [[0, '#ffffff'], [1, '#dfe4ec']]);
         ctx.fillRect(-50, y, 100, h);
         if (!ok) {
-          ctx.fillStyle = vgrad(y, y + h, [[0, '#ff4b4f'], [1, '#c81e2b']]);
+          ctx.fillStyle = vgrad(y, y + h, [[0, '#ffa64d'], [1, '#e0641a']]);
           for (let i = -1; i < 7; i++) {
             const sx = -50 + i * 18;
             ctx.beginPath(); ctx.moveTo(sx, y + h); ctx.lineTo(sx + 9, y + h); ctx.lineTo(sx + 9 + h, y); ctx.lineTo(sx + h, y); ctx.closePath(); ctx.fill();
@@ -1484,15 +1484,15 @@
       stripes(-34, 15, 3);
       if (!ok && lane > 38 && o.hz !== CLOSED) { // every hurdle is labelled as the old way of doing things
         ctx.fillStyle = '#fff'; rr(-33, -33.500, 66, 14, 2); ctx.fill();
-        ctx.fillStyle = '#8a1a22'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = font(11, 700);
+        ctx.fillStyle = '#23226b'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = font(11, 700);
         ctx.fillText('THE OLD WAY', 0, -26, 62);
       }
       stripes(-80, 38, 5);
       // label plate
       ctx.fillStyle = ok ? '#f0fff5' : '#fff'; rr(-43, -74.500, 86, 27, 3); ctx.fill();
-      ctx.strokeStyle = ok ? '#1f9e5c' : '#c81e2b'; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.strokeStyle = ok ? '#1f9e5c' : '#d9651a'; ctx.lineWidth = 1.6; ctx.stroke();
       if (lane > 24) {
-        ctx.fillStyle = ok ? '#0e6a3a' : '#c1121f'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = ok ? '#0e6a3a' : '#23226b'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.font = font(21);
         ctx.fillText(ok ? 'APPROVED ✓' : o.hz.label, 0, -60, 80);
       }
@@ -1705,7 +1705,7 @@
     }
     if (g.shake > 0) { // red hit flash
       const gr = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7);
-      gr.addColorStop(0, 'rgba(229,56,59,0)'); gr.addColorStop(1, `rgba(229,56,59,${g.shake * 1.4})`);
+      gr.addColorStop(0, 'rgba(245,138,60,0)'); gr.addColorStop(1, `rgba(245,138,60,${g.shake * 1.4})`);
       ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
     }
     if (g.flash > 0) { ctx.fillStyle = `rgba(255,244,200,${g.flash * 0.9})`; ctx.fillRect(0, 0, W, H); }
