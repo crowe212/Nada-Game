@@ -125,7 +125,7 @@
   const SPAWN_D = 120;       // distance at which things appear
   const BASE_V = 38;         // world units / second at speed 1
   const ROW_GAP = 36;        // distance between rows of objects
-  const STATE_LEN = 76;      // distance between state lines
+  const STATE_LEN = 86;      // distance between state lines
   const SHIELD_PATH = new Path2D('M12 2 21 5v6c0 6-4 10-9 12C7 21 3 17 3 11V5z');
   const DISPLAY = '"Barlow Condensed", "Arial Narrow", system-ui, sans-serif';
   const font = (px, weight = 800) => `${weight >= 700 ? 'italic ' : ''}${weight} ${px}px ${DISPLAY}`;
@@ -528,7 +528,7 @@
       powerLane = free.find((l) => l !== shieldLane);
       const kind = g.health < g.maxHealth && Math.random() < 0.65 ? 'eqa' : 'accufee';
       g.objs.push({ type: 'power', kind, lane: powerLane, d });
-      g.nextPower = 9 + ((Math.random() * 5) | 0);
+      g.nextPower = 11 + ((Math.random() * 6) | 0);
     }
     for (const l of free) {
       if (l !== shieldLane && l !== powerLane && Math.random() < 0.6) g.objs.push({ type: 'title', lane: l, d });
@@ -695,7 +695,7 @@
     // Spawning
     if (!g.finished && g.intro <= 0) {
       g.rowAcc += move;
-      const prog = clamp(g.state / (STATES.length - 1), 0, 1), gap = lerp(ROW_GAP, 27, prog * prog); // rows close up late in the trip
+      const prog = clamp(g.state / (STATES.length - 1), 0, 1), gap = lerp(ROW_GAP, 25, prog * prog); // rows close up late in the trip
       while (g.rowAcc >= gap) { g.rowAcc -= gap; spawnRow(SPAWN_D - g.rowAcc); }
     }
     g.scenAcc += move;
