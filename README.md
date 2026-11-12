@@ -32,6 +32,24 @@ Florida, title all 50 states, and get on the leaderboard.
   with the densest stretch on the run-in to Florida.
 - A run lasts 90 seconds. Reaching all 50 states early pays a bonus per second left.
 
+## The story: pass the deal
+
+One out-of-state deal moves from desk to desk as the car crosses the country. Each desk has its own
+hurdles, in the words prospects use on sales calls, and its own DLR50 fix as a power-up.
+
+| Leg | States | Hurdles | Power-up |
+| --- | --- | --- | --- |
+| F&I desk | 1–12 | WRONG FEE, GOOGLING IT, RE-SIGN, BLANK FORM | AccuFee™ |
+| Title desk | 13–25 | RETURNED, DUPE TITLE, MORE HOOPS, TITLE BRAND | eQA Corrections |
+| Controller's office | 26–38 | LATE PENALTY, WRITE-OFF, LIEN ISSUE, CHASING $$ | Verified Proof of Lien |
+| GM's office | 39–50 | NO ETA, ANGRY CALL, BAD REVIEW, IN THE DARK | Live Timeline (+5 days) |
+
+Your role's own desk pays double for titles. The results screen ends with a deal recap: how many
+hits each desk took and what DLR50 does about that desk's problem. All of this is in `DESKS` near
+the top of `www/game.js`.
+
+The leaderboard has **Today** and **Whole event** tabs.
+
 ## More in the game
 
 - **Temp tag countdown**: the clock is a 90-day temp tag, one day per second. Run out and the tag expires.

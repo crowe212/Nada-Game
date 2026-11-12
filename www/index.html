@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="preload" href="fonts/barlow-condensed-latin-800-italic.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <div id="app">
@@ -85,7 +85,7 @@
         </li>
         <li>
           <svg viewBox="0 0 32 32"><circle cx="11" cy="16" r="9" fill="#2fbf71" stroke="#fff" stroke-width="1.500"/><text x="11" y="21" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" font-family="Arial">$</text><circle cx="22" cy="16" r="9" fill="#f07a2c" stroke="#fff" stroke-width="1.500"/><text x="22" y="19.500" text-anchor="middle" font-size="7.500" font-weight="800" fill="#fff" font-family="Arial">eQA</text></svg>
-          <span><b>Power-ups:</b> AccuFee™ pulls in every title. eQA Corrections repairs your car.</span>
+          <span><b>Four desks, one deal:</b> F&amp;I, Title, Controller, GM. Each has its own headaches and its own <span class="brand"></span> fix to grab.</span>
         </li>
       </ul>
       <button id="howGo" class="btn primary">Got it</button>
@@ -104,6 +104,7 @@
       <p id="bestTag" class="newbest" hidden>New personal best!</p>
       <p class="tag" id="finalStates"></p>
       <p class="stats" id="stats"></p>
+      <div id="recap" class="recap" aria-label="Deal recap"></div>
       <p id="unlock" class="unlock" hidden></p>
       <form id="saveForm">
         <input id="name" maxlength="14" autocomplete="off" autocapitalize="characters" placeholder="Your name" aria-label="Your name">
@@ -147,11 +148,12 @@
     <div class="card">
       <p class="kicker" id="boardKicker">This device</p>
       <h2>Leaderboard</h2>
+      <div class="row2" id="boardTabs"><button class="btn small" data-scope="today">Today</button><button class="btn small" data-scope="all">Whole event</button></div>
       <ol id="menuBoard" class="board"></ol>
       <button id="closeBoard" class="btn primary">Back</button>
     </div>
   </section>
 </div>
-<script src="game.js?v=12"></script>
+<script src="game.js?v=13"></script>
 </body>
 </html>

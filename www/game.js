@@ -8,7 +8,7 @@
   const EVENT = 'NADA Show 2027';
   const CTA = 'Out-of-state titling, done in days, not months. Get a demo at dlr50.com.';
   const PLATE = 'DLR50';      // text on the car's license plate
-  const BUILD = 'v12';         // shown at the bottom of the menu so you can tell which version a phone has loaded
+  const BUILD = 'v13';         // shown at the bottom of the menu so you can tell which version a phone has loaded
   const RUN_SECONDS = 90;      // also the length of the temp tag, one day per second
   // Shared leaderboard: paste the web-app URL from tools/leaderboard-apps-script.gs here.
   // Left empty, scores are kept on each device only.
@@ -42,18 +42,35 @@
   const CLOSED = { label: 'CLOSED', msg: 'Window closed. Take a number!' };
   const SNAIL = { label: 'SNAIL MAIL', msg: 'Rear-ended the snail mail!' };
 
-  // The old way of doing out-of-state deals, in the words prospects use on sales calls.
-  const HAZARDS = [
-    { label: 'WRONG FEE', msg: "Not $800 — it's actually $925!" },
-    { label: 'RETURNED', msg: 'Packet returned. Again.' },
-    { label: 'GOOGLING IT', msg: 'Googling it and hoping…' },
-    { label: 'NO ETA', msg: '“Where are my plates?!”' },
-    { label: 'DUPE TITLE', msg: 'Duplicate title nightmare!' },
-    { label: 'RE-SIGN', msg: 'Missed signature — re-sign!' },
-    { label: 'LIEN ISSUE', msg: 'Lien not perfected!' },
-    { label: 'MORE HOOPS', msg: 'More hoops to jump through!' },
-    { label: 'LATE PENALTY', msg: 'Late penalty — who eats the cost?' },
+  // The story: one out-of-state deal is passed from desk to desk as the car crosses the country.
+  // Each desk has its own headaches (in the words prospects use on sales calls), its own DLR50 fix
+  // as a power-up, and one line for the recap on the results screen. `from` is the position in ROUTE.
+  const DESKS = [
+    { id: 'fni', name: 'F&I desk', short: 'F&I DESK', from: 0, tag: 'Quote it right. Sign it once.', power: 'accufee',
+      fix: 'AccuFee™ quotes exact fees and Smart Forms flag every signature.',
+      haz: [{ label: 'WRONG FEE', msg: "Not $800 — it's actually $925!" }, { label: 'GOOGLING IT', msg: 'Googling state rules and hoping…' },
+        { label: 'RE-SIGN', msg: 'Missed signature. Customer has to come back.' }, { label: 'BLANK FORM', msg: 'Signed a blank form. Compliance problem.' }] },
+    { id: 'title', name: 'Title desk', short: 'TITLE DESK', from: 12, tag: 'Build the packet. Beat the returns.', power: 'eqa',
+      fix: 'eQA Corrections show exactly what to fix before the packet is mailed.',
+      haz: [{ label: 'RETURNED', msg: 'Packet returned. Again.' }, { label: 'DUPE TITLE', msg: 'Duplicate title nightmare!' },
+        { label: 'MORE HOOPS', msg: 'More hoops to jump through!' }, { label: 'TITLE BRAND', msg: 'Unknown title brand on the trade!' }] },
+    { id: 'office', name: "Controller's office", short: 'CONTROLLER', from: 25, tag: 'Protect the profit.', power: 'lien',
+      fix: 'Safety Margin™ covers the unknowns, so there is nothing to write off.',
+      haz: [{ label: 'LATE PENALTY', msg: 'Late penalty. Who eats the cost?' }, { label: 'WRITE-OFF', msg: 'Another write-off this month.' },
+        { label: 'LIEN ISSUE', msg: 'Lien not perfected. Funding at risk.' }, { label: 'CHASING $$', msg: 'Chasing the customer for a check.' }] },
+    { id: 'gm', name: "GM's office", short: "GM'S OFFICE", from: 38, tag: 'Keep the customer happy.', power: 'timeline',
+      fix: 'A live timeline answers “where are my plates?” in seconds.',
+      haz: [{ label: 'NO ETA', msg: '“Where are my plates?!”' }, { label: 'ANGRY CALL', msg: 'Customer on line one. Again.' },
+        { label: 'BAD REVIEW', msg: 'One star: “still no plates.”' }, { label: 'IN THE DARK', msg: 'Weeks with zero visibility.' }] },
   ];
+  const deskIndex = (stateIdx) => { let i = 0; while (i < DESKS.length - 1 && stateIdx >= DESKS[i + 1].from) i++; return i; };
+  // How each power-up looks and what it is called.
+  const POWERS = {
+    accufee: { a: '#8dffb4', b: '#1f9e5c', dark: '#12703f', glow: [70, 214, 138], text: '$', small: 'ACCUFEE' },
+    eqa: { a: '#ffc08a', b: '#e0641a', dark: '#a8480f', glow: [245, 138, 60], text: 'eQA', small: '' },
+    lien: { a: '#d6c2ff', b: '#7a4fd6', dark: '#4b2c96', glow: [150, 110, 255], text: 'LIEN', small: 'VERIFIED' },
+    timeline: { a: '#a8e4ff', b: '#1b8fc6', dark: '#0d5a86', glow: [60, 170, 230], text: 'ETA', small: 'TIMELINE' },
+  };
 
   // States prospects call the hardest. They get more obstacles and double state-line points,
   // and a Fast Fact pops up as you enter. These come from sales-call notes, NOT verified
@@ -87,13 +104,13 @@
 
   // "I'm a…" picker on the menu; tailors the message on the results screen.
   const ROLES = [
-    { id: 'clerk', label: 'Title Clerk', perk: 'Paperwork pro: your streak bonus builds faster.', streakStep: 3,
+    { id: 'clerk', label: 'Title Clerk', desk: 1, perk: 'Streak bonus builds faster. Titles count double at the Title desk.', streakStep: 3,
       line: 'Pre-filled forms and clear checklists mean fewer returns.' },
-    { id: 'office', label: 'Controller', perk: 'Rainy-day fund: you start with one shield banked.', startShields: 1,
+    { id: 'office', label: 'Controller', desk: 2, perk: "Start with one shield. Titles count double in the Controller's office.", startShields: 1,
       line: 'Fewer write-offs and full oversight of every deal.' },
-    { id: 'finance', label: 'Finance', perk: 'Fast closer: your car has a higher top speed.', speed: 1.1,
+    { id: 'finance', label: 'Finance', desk: 0, perk: 'Higher top speed. Titles count double at the F&I desk.', speed: 1.1,
       line: 'Exact fees at the point of sale, without slowing the deal.' },
-    { id: 'gm', label: 'GM', perk: 'Big picture: your car can take one extra hit.', extraHits: 1,
+    { id: 'gm', label: 'GM', desk: 3, perk: "Car takes one extra hit. Titles count double in the GM's office.", extraHits: 1,
       line: 'Fewer headaches for your team and a healthier bottom line.' },
   ];
 
@@ -347,6 +364,7 @@
       t: 0, intro: 1.2, timeLeft: RUN_SECONDS, dist: 0, score: 0,
       lane: 1, tx: 1, px: 1, speed: 0.45, clean: 0,
       health: MAX_HITS + (role().extraHits || 0), maxHealth: MAX_HITS + (role().extraHits || 0), crashed: false, expired: false, spin: 0, hint: 4,
+      deskHits: [0, 0, 0, 0], deskTitles: [0, 0, 0, 0],
       magnet: 0, nextPower: 7, nextTruck: 5, plazaAt: -1, lmDone: -1, skid: 0, toldDamage: false, closeCalls: 0, hits: 0, bestMult: 1, warned: false,
       curve: 0, curveTarget: 0, curveLeft: 320, heading: 0,
       state: 0, toLine: STATE_LEN, shields: role().startShields || 0, autopilot: 0, jackpots: 0,
@@ -356,6 +374,7 @@
       finished: false, endDelay: 0, sinceLine: 9,
     };
     toast('NorCal → Orlando. GO!', '#fff', 1.9, false, 'Title all 50 before the temp tag expires');
+    toast(`FIRST STOP: ${DESKS[0].name.toUpperCase()}`, '#ffc533', 2, false, DESKS[0].tag);
   }
 
   let howThenPlay = false;
@@ -432,18 +451,39 @@
     $('unlock').hidden = !(won.length || nextPaint);
     $('unlock').textContent = won.length ? `New paint unlocked: ${won.map((pt) => pt.name).join(', ')}. Pick it in the garage.`
       : nextPaint ? `${nextPaint.need - after} more star${nextPaint.need - after === 1 ? '' : 's'} unlocks ${nextPaint.name} paint.` : '';
-    $('cta').textContent = `${role().line} ${CTA}`;
+    // Deal recap: how each desk fared, and what DLR50 does about it
+    const recap = $('recap'); recap.textContent = '';
+    const reached = deskIndex(g.state);
+    DESKS.forEach((dk, i) => {
+      const row = document.createElement('div'), head = document.createElement('b'), stat = document.createElement('span'), fix = document.createElement('p');
+      const hits = g.deskHits[i];
+      row.className = 'desk' + (i === role().desk ? ' home' : '') + (i > reached ? ' off' : hits ? ' hurt' : ' clean');
+      head.textContent = dk.name;
+      stat.textContent = i > reached ? 'not reached' : hits ? `${hits} hit${hits > 1 ? 's' : ''}` : 'clean';
+      fix.textContent = dk.fix;
+      row.append(head, stat, fix);
+      recap.appendChild(row);
+    });
+    $('cta').textContent = `${role().line} Get a demo at dlr50.com.`;
+    $('overBoard').hidden = true; // the top scores appear once this score is saved
     fetchRemote();
     $('saveForm').hidden = false;
     $('name').value = store.get('c2c.name', '');
-    renderBoard($('overBoard'), 5);
+    renderBoard($('overBoard'), 3, 'today');
     el.over.hidden = false;
   }
 
   // ---------- Leaderboard (stored on this device) ----------
   let remoteScores = store.get('c2c.remote', null);
   let pendingEntry = null; // the score just saved here, shown until the shared list includes it
-  function scores() {
+  let boardScope = 'today'; // 'today' or 'all' (the whole event)
+  const playedAt = (x) => (x.when ? Date.parse(x.when) : x.id > 1.5e12 ? x.id : 0);
+  const isToday = (x) => new Date(playedAt(x)).toDateString() === new Date().toDateString();
+  function scores(scope) {
+    const all = allScores();
+    return scope === 'today' ? all.filter(isToday) : all;
+  }
+  function allScores() {
     const local = store.get('c2c.scores', []);
     if (!LEADERBOARD_URL || !remoteScores) return local;
     const list = remoteScores.slice();
@@ -455,9 +495,9 @@
     try {
       const list = await (await fetch(LEADERBOARD_URL, { cache: 'no-store' })).json();
       if (!Array.isArray(list)) return;
-      remoteScores = list.slice(0, 25);
+      remoteScores = list.slice(0, 200);
       store.set('c2c.remote', remoteScores);
-      renderBoard($('overBoard'), 5); renderBoard($('menuBoard'), 10);
+      renderBoard($('overBoard'), 3, 'today'); renderBoard($('menuBoard'), 10);
     } catch (e) { /* offline: keep showing the last list we had */ }
   }
   // Tester feedback: goes to the same Google Sheet (a "Feedback" tab). Without one, it is handed to the
@@ -491,12 +531,12 @@
     pendingEntry = entry;
     postRemote(entry);
   }
-  function renderBoard(ol, limit) {
-    const list = scores().slice(0, limit);
+  function renderBoard(ol, limit, scope = boardScope) {
+    const list = scores(scope).slice(0, limit);
     ol.textContent = '';
     if (!list.length) {
       const li = document.createElement('li');
-      li.className = 'empty'; li.textContent = 'No scores yet — set the pace.';
+      li.className = 'empty'; li.textContent = scope === 'today' ? 'No scores yet today — set the pace.' : 'No scores yet — set the pace.';
       ol.appendChild(li);
       return;
     }
@@ -565,7 +605,7 @@
     if (truck) nH = Math.min(nH, 1); // never let a truck plus a row close every lane
     const free = lanes.slice(nH);
     g.lastTwo = nH === 2;
-    for (let i = 0; i < nH; i++) g.objs.push({ type: 'haz', lane: lanes[i], d, hz: pick(HAZARDS) });
+    for (let i = 0; i < nH; i++) g.objs.push({ type: 'haz', lane: lanes[i], d, hz: pick(DESKS[deskIndex(at)].haz) });
 
     const taken = new Set();
     if (!truck && !calm && elapsed > 12 && nH <= 1 && --g.nextTruck <= 0) { // slow snail-mail truck that lingers in its lane
@@ -583,7 +623,7 @@
     if (--g.nextPower <= 0 && open() != null) { // product power-ups; repairs only show up when the car is damaged
       const l = open(); taken.add(l);
       const damaged = g.health < g.maxHealth;
-      g.objs.push({ type: 'power', kind: damaged && Math.random() < 0.8 ? 'eqa' : 'accufee', lane: l, d });
+      g.objs.push({ type: 'power', kind: damaged && Math.random() < 0.6 ? 'eqa' : DESKS[deskIndex(at)].power, lane: l, d });
       g.nextPower = damaged ? 6 + ((Math.random() * 3) | 0) : 11 + ((Math.random() * 6) | 0);
     }
     for (const l of free) {
@@ -609,6 +649,7 @@
     smash(o);
     const x = laneX(g.px, 1);
     if (g.invuln > 0) return; // still recovering from the last one: it breaks, but no extra damage
+    g.deskHits[deskIndex(g.state)]++;
     if (g.shields > 0) { // Safety Margin: the shields are spent covering the hit
       g.shields = 0; g.invuln = 0.6; g.shake = 0.15;
       burst(x, playerY - 30, '#ffc533', 16);
@@ -646,6 +687,12 @@
     if (o.kind === 'accufee') {
       g.magnet = 7; add(200, o.lane, '#8dffb4');
       toast('AccuFee™', '#8dffb4', 1.7, false, 'Every title, down to the penny');
+    } else if (o.kind === 'lien') {
+      add(750, o.lane, '#d6c2ff');
+      toast('Verified Proof of Lien', '#d6c2ff', 1.7, false, 'Lender audit satisfied. Deal funded.');
+    } else if (o.kind === 'timeline') {
+      g.timeLeft = Math.min(RUN_SECONDS, g.timeLeft + 5); add(200, o.lane, '#a8e4ff');
+      toast('Live Timeline', '#a8e4ff', 1.7, false, 'No more waiting in the dark. +5 days');
     } else if (g.health < g.maxHealth) {
       g.health++;
       toast('eQA Corrections', '#ffb36b', 1.7, false, 'Fixed before it went out. Top speed restored.');
@@ -673,6 +720,11 @@
     g.toLine += STATE_LEN;
     const fact = FAST_FACTS[STATES[g.state]];
     add(fact ? 500 : 250);
+    const desk = DESKS[deskIndex(g.state)];
+    if (desk.from === g.state) { // the deal moves to the next desk
+      toast(`DEAL PASSED TO: ${desk.name.toUpperCase()}`, '#ffc533', 2.3, false, desk.tag + (deskIndex(g.state) === role().desk ? ' Your desk: titles ×2.' : ''));
+      g.flash = 0.25;
+    }
     if (fact && g.state < STATES.length - 1) {
       toast(`FAST FACT · ${STATES[g.state].toUpperCase()}`, '#7fd8fb', 2.2, false, fact);
     } else if (MILESTONES[g.state + 1]) {
@@ -802,7 +854,9 @@
           g.mult = Math.min(5, 1 + Math.floor(g.streak / (role().streakStep || 4)));
           if (g.mult > was) { g.bestMult = Math.max(g.bestMult, g.mult); toast(CALLOUTS[g.mult - 2], '#8dffb4', 1.2, false, `×${g.mult} streak`); }
           else if (g.titles % 20 === 0) toast("It's like a little DMV Christmas!", '#8dffb4', 1.3);
-          add(100 * g.mult, o.lane);
+          const di = deskIndex(g.state), home = di === role().desk; // your own desk pays double
+          g.deskTitles[di]++;
+          add(100 * g.mult * (home ? 2 : 1), o.lane, home ? '#ffc533' : '#fff');
           burst(laneX(g.px, 1), playerY - 60, '#bfe0ff', 5);
           sfx.title(g.mult);
         } else if (o.type === 'power') {
@@ -858,7 +912,8 @@
     $('buff').classList.toggle('bad', g.magnet <= 0 && lost > 0);
     setText(el.stateName, 'sn', STATES[g.state]);
     setText(el.stateCount, 'sc', `${g.state + 1} / 50`);
-    setText(el.mult, 'mult', g.mult > 1 ? `×${g.mult} STREAK` : '');
+    const dk = deskIndex(g.state);
+    setText(el.mult, 'mult', g.mult > 1 ? `×${g.mult} STREAK` : DESKS[dk].short + (dk === role().desk ? ' ×2' : ''));
     if (hudCache.health !== g.health) {
       hudCache.health = g.health;
       [...$('health').children].forEach((c, i) => c.classList.toggle('lost', i >= g.health));
@@ -1434,18 +1489,18 @@
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.beginPath(); ctx.moveTo(14, 32); ctx.lineTo(18.500, 36.500); ctx.lineTo(26, 27); ctx.stroke();
     } else if (o.type === 'power') {
-      const u = lane * 0.6 / 100, acc = o.kind === 'accufee', bob = Math.sin(t * 4 + o.d * 0.05) * 8;
+      const u = lane * 0.6 / 100, pw = POWERS[o.kind], bob = Math.sin(t * 4 + o.d * 0.05) * 8;
       ctx.scale(u, u);
       oval('rgba(0,0,0,.26)', 0, 0, 40, 8);
       ctx.translate(0, -92 + bob);
-      ctx.globalCompositeOperation = 'lighter'; glow(0, 0, 112, acc ? [70, 214, 138] : [245, 138, 60], 0.45); ctx.globalCompositeOperation = 'source-over';
-      disc(acc ? '#12703f' : '#a8480f', 2, 4, 46);
-      ctx.fillStyle = vgrad(-46, 46, acc ? [[0, '#8dffb4'], [1, '#1f9e5c']] : [[0, '#ffc08a'], [1, '#e0641a']]);
+      ctx.globalCompositeOperation = 'lighter'; glow(0, 0, 112, pw.glow, 0.45); ctx.globalCompositeOperation = 'source-over';
+      disc(pw.dark, 2, 4, 46);
+      ctx.fillStyle = vgrad(-46, 46, [[0, pw.a], [1, pw.b]]);
       ctx.beginPath(); ctx.arc(0, 0, 46, 0, 7); ctx.fill();
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
       ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = font(acc ? 50 : 40); ctx.fillText(acc ? '$' : 'eQA', 0, acc ? -8 : 2);
-      if (acc) { ctx.font = font(15, 700); ctx.fillText('ACCUFEE', 0, 25); }
+      ctx.font = font(pw.text.length > 1 ? 34 : 50); ctx.fillText(pw.text, 0, pw.small ? -7 : 2, 80);
+      if (pw.small) { ctx.font = font(14, 700); ctx.fillText(pw.small, 0, 24, 78); }
     } else {
       const u = lane * 0.62 / 100;
       const bob = Math.sin(t * 4 + o.d * 0.05) * 8, pulse = 0.5 + Math.sin(t * 6) * 0.5;
@@ -1809,7 +1864,8 @@
     saveScore(name);
     $('name').blur();
     $('saveForm').hidden = true;
-    renderBoard($('overBoard'), 5);
+    $('overBoard').hidden = false;
+    renderBoard($('overBoard'), 3, 'today');
   });
   $('share').addEventListener('click', async () => {
     const text = `I titled ${g.state + 1} of 50 states and scored ${fmt(g.score)} in Coast to Coast by ${BRAND}. Beat that!`;
@@ -1864,6 +1920,9 @@
   $('build').textContent = BUILD;
   $('build').addEventListener('click', () => { $('build').textContent = audioStatus(); });
   $('boardKicker').textContent = LEADERBOARD_URL ? EVENT : 'This device';
+  const paintTabs = () => [...$('boardTabs').children].forEach((b) => b.classList.toggle('on', b.dataset.scope === boardScope));
+  [...$('boardTabs').children].forEach((b) => b.addEventListener('click', () => { boardScope = b.dataset.scope; paintTabs(); renderBoard($('menuBoard'), 10); }));
+  paintTabs();
   fetchRemote();
   $('chip').textContent = `50 states · one ${RUN_SECONDS}-day temp tag`;
   $('eventTag').textContent = `${BRAND}™ by ${COMPANY} · ${EVENT}`;

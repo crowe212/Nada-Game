@@ -19,10 +19,10 @@ function sheet_() {
 function doGet() {
   const rows = sheet_().getDataRange().getValues().slice(1);
   const top = rows
-    .map((r) => ({ id: r[1], name: String(r[2]), role: String(r[3]), score: Number(r[4]), states: Number(r[5]) }))
+    .map((r) => ({ when: r[0] instanceof Date ? r[0].toISOString() : '', id: r[1], name: String(r[2]), role: String(r[3]), score: Number(r[4]), states: Number(r[5]) }))
     .filter((r) => r.name && r.score >= 0)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 25);
+    .slice(0, 200); // the game filters these into Today and Whole event
   return ContentService.createTextOutput(JSON.stringify(top)).setMimeType(ContentService.MimeType.JSON);
 }
 
