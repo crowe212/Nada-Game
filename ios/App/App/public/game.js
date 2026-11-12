@@ -9,7 +9,8 @@
   const CTA = 'Out-of-state titling, done in days, not months. Get a demo at dlr50.com.';
   const PLATE = 'DEALER';     // the car is the dealer; DLR50 is the set of tools they pick up
   const TEST_MODE = true;     // shows the Feedback buttons and the version label. Set to false for the show.
-  const BUILD = 'v14';         // shown at the bottom of the menu so you can tell which version a phone has loaded
+  const BUILD = 'v15';
+  const CHEAT_CODE = 'DLR50';  // typed on the menu: the next run is Full-Service the whole way (not counted on the leaderboard)         // shown at the bottom of the menu so you can tell which version a phone has loaded
   const RUN_SECONDS = 90;      // also the length of the temp tag, one day per second
   // Shared leaderboard: paste the web-app URL from tools/leaderboard-apps-script.gs here.
   // Left empty, scores are kept on each device only.
@@ -102,6 +103,7 @@
     { id: 'white', name: 'Temp Tag White', need: 2, b: ['#ffffff', '#eef1f6', '#c9d0dc', '#9aa3b3'], c: ['#f4f6fa', '#b9c1cf'], s: '#25aae2' },
     { id: 'beige', name: 'DMV Beige', need: 4, b: ['#f1e3c4', '#d9c49a', '#b89f72', '#8f7a55'], c: ['#e6d5b0', '#a8926a'], s: '#6b5a3c' },
     { id: 'navy', name: 'Midnight Navy', need: 7, b: ['#4a49a8', '#2b2a7a', '#1b1a58', '#101040'], c: ['#3a3990', '#17174f'], s: '#25aae2' },
+    { id: 'closer', name: 'The Closer', need: 0, needScore: 150000, wing: true, b: ['#ff9a9a', '#e5383b', '#a81822', '#6e0d14'], c: ['#ff7a7a', '#8f141d'], s: '#14161c' },
     { id: 'gold', name: 'Safety Margin Gold', need: 10, b: ['#fff0a8', '#ffc533', '#e09a00', '#a86e00'], c: ['#ffe07a', '#c98a00'], s: '#23226b' },
   ];
   const STAR_AT = [15, 30, 50]; // states needed for 1, 2 and 3 stars
@@ -381,6 +383,7 @@
     toast(`${DESKS[0].lead}: ${DESKS[0].name.toUpperCase()}`, '#ffc533', 2.2, false, DESKS[0].tag + (role().desk === 0 ? ' Your desk: ×2.' : ''));
   }
 
+  let cheatNext = false;
   let howThenPlay = false;
   function showHow(thenPlay) {
     howThenPlay = thenPlay;
@@ -397,6 +400,10 @@
     musicStart();
     drag = null;
     newRun();
+    if (cheatNext) { // the DLR50 code: Full-Service for the whole ride
+      cheatNext = false; g.cheat = true; g.autopilot = 2;
+      toast(`CODE ${CHEAT_CODE} ACCEPTED`, '#ffc533', 2.4, false, 'Full-Service the whole way. Enjoy the ride.');
+    }
     buildHealth();
     mode = 'play';
     lastSaved = -1;
@@ -442,18 +449,19 @@
       : g.crashed ? `Car totaled in ${STATES[g.state]} · ${n} of 50 states titled`
       : `Temp tag expired in ${STATES[g.state]} · ${n} of 50 states titled`;
     // Stars, personal best, run stats and paint unlocks
-    const stars = STAR_AT.filter((t) => n >= t).length;
+    const stars = g.cheat ? 0 : STAR_AT.filter((t) => n >= t).length;
     [...$('stars').children].forEach((c, i) => { c.classList.remove('on'); if (i < stars) { void c.getBoundingClientRect(); c.classList.add('on'); } });
     const best = store.get('c2c.best', 0), score = Math.round(g.score);
-    $('bestTag').hidden = !(score > best && best > 0);
-    if (score > best) store.set('c2c.best', score);
+    $('bestTag').hidden = !(score > best && best > 0) || !!g.cheat;
+    if (score > best && !g.cheat) store.set('c2c.best', score);
     $('stats').textContent = `${g.titles} titles · best streak ×${g.bestMult} · ${g.jackpots} jackpot${g.jackpots === 1 ? '' : 's'} · ${g.closeCalls} close call${g.closeCalls === 1 ? '' : 's'}`;
     const before = store.get('c2c.stars', 0), after = before + stars;
     store.set('c2c.stars', after);
-    const won = PAINTS.filter((pt) => pt.need > before && pt.need <= after);
+    const won = PAINTS.filter((pt) => (pt.needScore ? !g.cheat && best < pt.needScore && score >= pt.needScore : pt.need > before && pt.need <= after));
     const nextPaint = PAINTS.find((pt) => pt.need > after);
-    $('unlock').hidden = !(won.length || nextPaint);
-    $('unlock').textContent = won.length ? `New paint unlocked: ${won.map((pt) => pt.name).join(', ')}. Pick it in the garage.`
+    $('unlock').hidden = !(won.length || nextPaint || g.cheat);
+    $('unlock').textContent = g.cheat ? `Code runs don't count for stars or the leaderboard. In real life, Full-Service is one click per deal.`
+      : won.length ? `New paint unlocked: ${won.map((pt) => pt.name).join(', ')}. Pick it in the garage.`
       : nextPaint ? `${nextPaint.need - after} more star${nextPaint.need - after === 1 ? '' : 's'} unlocks ${nextPaint.name} paint.` : '';
     // Deal recap: how each desk fared, and what DLR50 does about it
     const recap = $('recap'); recap.textContent = '';
@@ -471,8 +479,8 @@
     $('cta').textContent = role().line;
     $('overBoard').hidden = true; // the top scores appear once this score is saved
     fetchRemote();
-    $('saveForm').hidden = false;
-    $('saveNote').hidden = false;
+    $('saveForm').hidden = !!g.cheat;
+    $('saveNote').hidden = !!g.cheat;
     $('name').value = store.get('c2c.name', '');
     renderBoard($('overBoard'), 3, 'today');
     el.over.hidden = false;
@@ -812,6 +820,7 @@
     }
     engineSet(g.speed, true);
     g.invuln = Math.max(0, g.invuln - dt);
+    if (g.cheat && !g.finished) g.autopilot = Math.max(g.autopilot, 1);
     g.magnet = Math.max(0, g.magnet - dt);
     g.shake = Math.max(0, g.shake - dt);
     g.flash = Math.max(0, g.flash - dt);
@@ -1602,12 +1611,18 @@
     ctx.fillStyle = pt.s; ctx.fillRect(-9, -47, 6, 23); ctx.fillRect(3, -47, 6, 23);
     ctx.fillRect(-8, -71, 5, 5); ctx.fillRect(3, -71, 5, 5);
 
+    if (pt.wing) {
+      ctx.fillStyle = '#14161c'; ctx.fillRect(-32, -57, 5, 11); ctx.fillRect(27, -57, 5, 11);
+      rr(-50, -62, 100, 7, 3); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(-46, -61, 92, 1.500);
+    }
+
     // tail lights
     const lit = braking ? 1 : 0.55;
     ctx.globalCompositeOperation = 'lighter';
     glow(-34, -34, 26, [255, 40, 50], 0.5 * lit); glow(34, -34, 26, [255, 40, 50], 0.5 * lit);
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = '#5c0b14'; rr(-22, -36, 44, 5, 2); ctx.fill();
+    ctx.fillStyle = pt.wing ? '#ff3b4a' : '#5c0b14'; rr(-22, pt.wing ? -38 : -36, 44, pt.wing ? 7 : 5, 2); ctx.fill();
     ctx.fillStyle = vgrad(-39, -30, [[0, braking ? '#ffb0b0' : '#ff6a72'], [1, '#e0142a']]);
     rr(-48, -39, 27, 9, 4); ctx.fill(); rr(21, -39, 27, 9, 4); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.55)'; rr(-45, -37.500, 12, 2.500, 1); ctx.fill(); rr(24, -37.500, 12, 2.500, 1); ctx.fill();
@@ -1865,7 +1880,14 @@
   $('resume').addEventListener('click', resume);
   $('pause').addEventListener('click', pause);
   $('showHow').addEventListener('click', () => showHow(false));
-  let fbFrom = null;
+  $('codeForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const ok = $('code').value.trim().toUpperCase() === CHEAT_CODE;
+    cheatNext = ok;
+    $('code').value = ''; $('code').blur();
+    $('paintInfo').textContent = ok ? 'Code accepted: your next run is Full-Service the whole way.' : 'That code is not valid.';
+  });
+  let fbFrom = null, fbBusy = false;
   const openFeedback = (from) => { fbFrom = from; from.hidden = true; $('fbStatus').textContent = ''; $('feedback').hidden = false; };
   $('showFb').addEventListener('click', () => openFeedback(el.menu));
   $('overFb').addEventListener('click', () => openFeedback(el.over));
@@ -1874,9 +1896,12 @@
     e.preventDefault();
     const text = $('fbText').value.trim();
     if (!text) { $('fbStatus').textContent = 'Type an idea first.'; return; }
+    if (fbBusy) return; // a second tap while sending would post it twice
+    fbBusy = true;
     $('fbStatus').textContent = 'Sending…';
-    $('fbStatus').textContent = await sendFeedback(text, $('fbName').value.trim());
     $('fbText').value = '';
+    $('fbStatus').textContent = await sendFeedback(text, $('fbName').value.trim());
+    fbBusy = false;
   });
   $('howGo').addEventListener('click', () => {
     store.set('c2c.seenHow', true);
@@ -1929,21 +1954,22 @@
     const b = document.createElement('button');
     b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', pt.name);
     b.style.background = `linear-gradient(180deg, ${pt.b[0]}, ${pt.b[1]} 40%, ${pt.b[3]})`;
-    b.dataset.need = pt.need;
+    b.dataset.need = pt.needScore ? `${pt.needScore / 1000}K` : `${pt.need}★`;
     b.addEventListener('click', () => {
-      if (store.get('c2c.stars', 0) >= pt.need) { paintId = pt.id; store.set('c2c.paint', paintId); }
+      if (unlocked(pt)) { paintId = pt.id; store.set('c2c.paint', paintId); }
       paintPaints(pt);
     });
     $('paints').appendChild(b);
   });
+  const unlocked = (pt) => (pt.needScore ? store.get('c2c.best', 0) >= pt.needScore : store.get('c2c.stars', 0) >= pt.need);
   function paintPaints(tapped) {
     const have = store.get('c2c.stars', 0);
     [...$('paints').children].forEach((b, i) => {
       b.classList.toggle('on', PAINTS[i].id === paint().id);
-      b.classList.toggle('locked', have < PAINTS[i].need);
+      b.classList.toggle('locked', !unlocked(PAINTS[i]));
     });
-    $('paintInfo').textContent = tapped && have < tapped.need
-      ? `${tapped.name}: earn ${tapped.need - have} more star${tapped.need - have === 1 ? '' : 's'} to unlock.`
+    $('paintInfo').textContent = tapped && !unlocked(tapped)
+      ? (tapped.needScore ? `${tapped.name}: score ${fmt(tapped.needScore)} in one run to unlock this car.` : `${tapped.name}: earn ${tapped.need - have} more star${tapped.need - have === 1 ? '' : 's'} to unlock.`)
       : `${paint().name} · you have ${have} star${have === 1 ? '' : 's'}`;
   }
   paintPaints();
