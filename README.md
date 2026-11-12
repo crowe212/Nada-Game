@@ -50,7 +50,6 @@ Florida, title all 50 states, and get on the leaderboard.
   headlights from Nebraska to Minnesota.
 - **Landmarks**: a bridge in California, a needle tower in Washington, buttes, oil derricks, an
   arch in Missouri, a skyline, a statue in New York, lighthouses, a giant peach, rockets.
-- **Announcer** for the big moments, using the phone's built-in voice.
 
 ## Song
 

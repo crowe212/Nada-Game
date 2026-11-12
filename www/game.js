@@ -236,14 +236,6 @@
     song.play().catch(() => {});
   }
   function songPause() { if (song) song.pause(); }
-  // Announcer for the big moments, using the phone's built-in voice.
-  function say(text) {
-    try {
-      if (muted || !window.speechSynthesis) return;
-      const u = new SpeechSynthesisUtterance(text); u.rate = 1.08; u.pitch = 0.85; u.volume = 1;
-      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
-    } catch (e) { /* no voice available */ }
-  }
 
   // Fallback music: a simple driving loop, scheduled a little ahead of time.
   let music = null;
@@ -359,7 +351,6 @@
       finished: false, endDelay: 0, sinceLine: 9,
     };
     toast('NorCal → Orlando. GO!', '#fff', 1.9, false, 'Title all 50 before the temp tag expires');
-    say('Beat the temp tag!');
   }
 
   let howThenPlay = false;
@@ -633,7 +624,6 @@
   function expire() {
     g.finished = true; g.expired = true; g.endDelay = 2; g.autopilot = 0;
     toast('TAG EXPIRED!', '#ff6b6b', 2, true, 'Days, not months, remember?');
-    say('Tag expired!');
     buzz([60, 40, 60]);
     sfx.end();
   }
@@ -642,7 +632,6 @@
     buzz([90, 40, 180]);
     g.finished = true; g.crashed = true; g.endDelay = 2.2; g.autopilot = 0; g.shake = 0.7;
     toast('TOTALED!', '#ff6b6b', 2.2, true, 'Too much red tape.');
-    say('Totaled!');
     burst(laneX(g.px, 1), playerY - 30, '#ffb347', 30);
     sfx.crash();
   }
@@ -667,7 +656,6 @@
     g.autopilot = AUTOPILOT_SECONDS; g.invuln = 0; g.flash = 0.5;
     add(2000);
     toast('JACKPOT!', '#ffc533', 1.3, true);
-    say('Jackpot! Full service!');
     toast(`${BRAND}™ FULL-SERVICE`, '#ffc533', AUTOPILOT_SECONDS, false, 'We do everything else.');
     burst(W / 2, H * 0.42, '#ffc533', 46);
     burst(W / 2, H * 0.42, '#fff3b0', 20);
@@ -687,7 +675,6 @@
     }
     sfx.state(); sfx.whoosh();
     if (g.state >= STATES.length - 1) {
-      say('Coast to coast!');
       g.finished = true; g.endDelay = 2.4; g.autopilot = 0; g.flash = 0.5;
       const bonus = 5000 + Math.ceil(g.timeLeft) * 200;
       add(bonus);
@@ -751,7 +738,7 @@
     g.flash = Math.max(0, g.flash - dt);
     if (g.autopilot > 0) {
       g.autopilot -= dt;
-      if (g.autopilot <= 0) { g.invuln = 1.2; toast('Back to Self-Service…', '#fff', 0.9); }
+      if (g.autopilot <= 0) { g.invuln = 1.2; toast('Back in the driver’s seat', '#7fd8fb', 1.4, false, 'Self-Service: your deal, your pace'); }
     }
 
     // State lines
@@ -1819,8 +1806,9 @@
   $('share').addEventListener('click', async () => {
     const text = `I titled ${g.state + 1} of 50 states and scored ${fmt(g.score)} in Coast to Coast by ${BRAND}. Beat that!`;
     try {
-      if (navigator.share) await navigator.share({ text });
-      else { await navigator.clipboard.writeText(text); $('share').textContent = 'Copied!'; setTimeout(() => { $('share').textContent = 'Share my score'; }, 1500); }
+      const url = location.href.split('#')[0];
+      if (navigator.share) await navigator.share({ text, url });
+      else { await navigator.clipboard.writeText(`${text} ${url}`); $('share').textContent = 'Copied!'; setTimeout(() => { $('share').textContent = 'Share my score'; }, 1500); }
     } catch (err) { /* share cancelled */ }
   });
 
