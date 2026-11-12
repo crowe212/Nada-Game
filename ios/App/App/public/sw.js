@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION whenever game files change.
-const VERSION = 'c2c-v10';
+const VERSION = 'c2c-v11';
 const FILES = ['./', 'index.html', 'style.css', 'game.js', 'manifest.webmanifest', 'fonts/barlow-condensed-latin-600-normal.woff2', 'fonts/barlow-condensed-latin-700-italic.woff2', 'fonts/barlow-condensed-latin-800-italic.woff2', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

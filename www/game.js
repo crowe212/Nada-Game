@@ -231,16 +231,17 @@
     } catch (e) { song = null; }
   })(0);
   function songPlay() {
-    if (!song || !songReady || muted || !song.paused || document.hidden) return;
-    musicStop();
-    song.play().catch(() => {});
+    // iPhones do not load audio until a tap asks it to play, so do not wait for it to be "ready" first.
+    if (!song || muted || !song.paused || document.hidden) return;
+    const started = song.play();
+    if (started && started.then) started.then(musicStop).catch(() => {});
   }
   function songPause() { if (song) song.pause(); }
 
   // Fallback music: a simple driving loop, scheduled a little ahead of time.
   let music = null;
   function musicStart() {
-    if (song && songReady) return songPlay();
+    if (song) return songPlay();
     if (!ac || music) return;
     try {
       const out = ac.createGain(); out.gain.value = 0.55; out.connect(ac.destination);
@@ -291,6 +292,8 @@
   };
   function unlockAudio() {
     try {
+      // Play like a game or music app, so the iPhone's ring/silent switch does not mute the sound effects.
+      if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback';
       if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
       if (ac.state === 'suspended') ac.resume();
     } catch (e) { /* no audio */ }
@@ -1794,7 +1797,10 @@
   $('showBoard').addEventListener('click', () => { fetchRemote(); renderBoard($('menuBoard'), 10); el.menu.hidden = true; el.board.hidden = false; });
   $('closeBoard').addEventListener('click', () => { el.board.hidden = true; el.menu.hidden = false; });
   el.mute.addEventListener('click', () => { muted = !muted; store.set('c2c.muted', muted); paintMute(); unlockAudio(); if (muted) songPause(); else if (mode !== 'paused') songPlay(); });
-  document.addEventListener('pointerdown', () => { if (mode !== 'paused') songPlay(); }); // browsers only allow sound after a tap
+  // Browsers only allow sound after a tap, and iPhones only count the end of the tap.
+  for (const ev of ['pointerup', 'touchend', 'click']) {
+    document.addEventListener(ev, () => { unlockAudio(); if (mode !== 'paused') songPlay(); }, { passive: true });
+  }
   $('saveForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const name = $('name').value.trim().toUpperCase().slice(0, 14) || 'PLAYER';
