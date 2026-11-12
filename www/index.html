@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Coast to Coast</title>
-<meta name="description" content="Title and register in all 50 states in 60 seconds. A coast-to-coast road trip game from DLR50 by DLRdmv.">
+<meta name="description" content="Title and register in all 50 states in 90 seconds. A coast-to-coast road trip game from DLR50 by DLRdmv.">
 <meta name="theme-color" content="#0b1b3a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -33,6 +33,7 @@
     <div class="progress">
       <div class="progress-text"><span id="stateName">California</span><span id="mult"></span><span id="stateCount">1 / 50</span></div>
       <div class="bar"><div id="bar"></div></div>
+      <div id="health" aria-label="Car condition"></div>
     </div>
     <div id="banner" hidden>AUTOPILOT</div>
   </div>
@@ -43,7 +44,7 @@
     <div class="logo">
       <p class="kicker" id="eventTag"></p>
       <h1><span class="l1">COAST</span><span class="l2"><i>to</i>COAST</span></h1>
-      <p class="chip">50 states · 60 seconds</p>
+      <p class="chip" id="chip">50 states · 90 seconds</p>
     </div>
     <div class="sheet">
       <ul class="how">
@@ -53,17 +54,18 @@
         </li>
         <li>
           <svg viewBox="0 0 32 32"><rect x="5" y="23" width="3" height="7" fill="#7c8698"/><rect x="24" y="23" width="3" height="7" fill="#7c8698"/><rect x="2" y="7" width="28" height="16" rx="3" fill="#fff"/><path d="M2 19 12 7h5L7 19zM14 23l12-16h4v2L19 23zM2 10l3-3H2z" fill="#e5383b"/></svg>
-          <span><b>Dodge the old way</b> — wrong fees, missed signatures, late penalties.</span>
+          <span><b>Dodge the old way</b> — wrong fees, returns, late penalties. Each hit damages your car; too many and it's totaled.</span>
         </li>
         <li>
           <svg viewBox="0 0 32 32"><path d="M16 2 28 6v8c0 8-5.300 13.300-12 16C9.300 27.300 4 22 4 14V6z" fill="#ffc533" stroke="#fff" stroke-width="1.5"/><path d="M10 16.500 14.500 21 22 11" fill="none" stroke="#0b1b3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span><b>Press your luck:</b> 3 shields hit the jackpot and <span class="brand"></span> goes Full-Service. Hit red tape first and your shields are spent covering it.</span>
         </li>
       </ul>
-      <div class="rolebar"><span>I'm a</span><div id="roles" role="radiogroup" aria-label="Your role"></div></div>
+      <div class="rolebar"><span>Drive as</span><div id="roles" role="radiogroup" aria-label="Your role"></div></div>
+      <p id="roleInfo" class="roleinfo"></p>
       <button id="play" class="btn primary">Start driving</button>
       <button id="showBoard" class="btn">Leaderboard</button>
-      <p class="hint">Tap the left or right side of the screen to change lanes</p>
+      <p class="hint">Slide your thumb left and right to steer</p>
     </div>
   </section>
 

@@ -1,38 +1,43 @@
 # Coast to Coast
 
-A 60-second, 50-state road trip game for the NADA Show 2027 booth, built around
+A 90-second, 50-state road trip game for the NADA Show 2027 booth, built around
 DLR50™ by DLRdmv (out-of-state titling in all 50 states). Drive from California to
 Florida, title all 50 states, and get on the leaderboard.
 
 ## How it plays
 
-- **Tap left / right** to change lanes (arrow keys on a computer).
-- **Grab titles** to score. Every 4 in a row raises your multiplier (up to ×5).
-- **Dodge the old way**: WRONG FEE, RE-SIGN, LATE PENALTY, RETURNED, TITLE BRAND,
-  NO STATUS. A hit slows you down and wipes your streak.
-- **Press your luck**: collect three shields for the JACKPOT. For a few seconds
-  DLR50 goes Full-Service — you speed up, can't crash, and every piece of red tape
-  gets stamped APPROVED for points. Hit red tape before the third shield and the
-  shields are spent covering it (Safety Margin™): no slowdown, but you start the
-  jackpot count over.
+- **Slide your thumb** left and right anywhere on the screen to steer (arrow keys on a
+  computer). The road has straights and bends.
+- **Grab titles** to score. A streak raises your multiplier (up to ×5).
+- **Dodge the old way**: WRONG FEE, RETURNED, GOOGLING IT, NO ETA, DUPE TITLE, RE-SIGN,
+  LIEN ISSUE, MORE HOOPS, LATE PENALTY. Every hurdle you touch breaks. A hit slows you
+  down, wipes your streak and damages the car; after 4 hits the car is totaled and the
+  run ends early.
+- **Press your luck**: collect three shields for the JACKPOT. For a few seconds DLR50
+  goes Full-Service — you speed up, can't crash, and every hurdle is stamped APPROVED.
+  Hit a hurdle while holding shields and they are spent covering it (Safety Margin™):
+  no damage, but the jackpot count starts over.
+- **Roles change the game**: Title Clerk builds streaks faster, Controller starts with
+  one shield, Finance has a higher top speed, GM's car takes one extra hit. The role
+  also tailors the message on the results screen.
+- **The route is a real drive** from Northern California to Orlando in which each state
+  borders the one before. Hawaii and Alaska can't be driven to, so those two are
+  signed "by ship from Oakland" and "by ferry from Bellingham". Scenery follows the
+  region you are in.
 - **Tough states** (California, Colorado, Pennsylvania, Rhode Island, New Hampshire,
-  North Carolina, Florida) have orange signs, more obstacles and double state-line
-  points, and show a Fast Fact as you enter. The facts come from sales-call notes
-  and are **not verified** — have a title expert check `FAST_FACTS` in `www/game.js`.
-- **"I'm a…" picker** on the menu (Title Clerk, Controller, Finance, GM) tailors the
-  message on the results screen.
-- The route is ordered so the scenery matches the states: Pacific coast and Hawaii,
-  snowy Alaska, the Northwest and Rockies, the desert Southwest, Texas and the
-  plains, the Northeast in fall colour, the South, and a Florida sunset.
-- Each state line is worth points. Reaching all 50 before the clock runs out pays a
-  big bonus plus extra for every second left.
+  North Carolina, Florida) have orange signs, more hurdles and double state-line
+  points, and show a Fast Fact as you enter. The facts come from sales-call notes and
+  are **not verified** — have a title expert check `FAST_FACTS` in `www/game.js`.
+- It starts gently (no hurdles for the first few seconds) and gets steadily harder,
+  with the densest stretch on the run-in to Florida.
+- A run lasts 90 seconds. Reaching all 50 states early pays a bonus per second left.
 
 ## Where the ideas came from
 
 | From the meeting | In the game |
 | --- | --- |
 | "Coast to coast" theme, "driving results coast to coast" | The whole trip: California → Florida, scenery changes along the way |
-| Short, quick racing game with a leaderboard | 60-second runs, score, leaderboard, share button |
+| Short, quick racing game with a leaderboard | 90-second runs, score, leaderboard, share button |
 | Three shields = jackpot (slot machine) | Three shield slots at the top of the screen |
 | Press Your Luck with penalties like "you misfiled a form" | Red tape wipes your shields before the jackpot |
 | The title clerk grind, then life with the product | Red tape is the old way; Full-Service mode is DLR50 doing it for you |
@@ -63,7 +68,7 @@ After changing anything in `www`, run `npm install` once and then
 
 ## Change the wording
 
-The top of `www/game.js` has the product and company names, event name, end-of-game message, run
+The top of `www/game.js` has the product and company names, event name, hits allowed, end-of-game message, run
 length, jackpot length and license plate text. The hazard labels, state order and scenery regions are right below. Product
 wording was taken from dlr50.com.
 
