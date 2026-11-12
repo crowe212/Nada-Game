@@ -15,6 +15,12 @@ Florida, title all 50 states, and get on the leaderboard.
   gets stamped APPROVED for points. Hit red tape before the third shield and the
   shields are spent covering it (Safety Margin™): no slowdown, but you start the
   jackpot count over.
+- **Tough states** (California, Colorado, Pennsylvania, Rhode Island, New Hampshire,
+  North Carolina, Florida) have orange signs, more obstacles and double state-line
+  points, and show a Fast Fact as you enter. The facts come from sales-call notes
+  and are **not verified** — have a title expert check `FAST_FACTS` in `www/game.js`.
+- **"I'm a…" picker** on the menu (Title Clerk, Controller, Finance, GM) tailors the
+  message on the results screen.
 - The route is ordered so the scenery matches the states: Pacific coast and Hawaii,
   snowy Alaska, the Northwest and Rockies, the desert Southwest, Texas and the
   plains, the Northeast in fall colour, the South, and a Florida sunset.

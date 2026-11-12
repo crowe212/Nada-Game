@@ -195,3 +195,18 @@ h2 { margin: 0; font-family: var(--display); font-size: 44px; font-weight: 800; 
 .board .empty { display: block; text-align: center; color: var(--muted); background: none; font-weight: 600; }
 
 .cta { margin: 0; max-width: 340px; font-size: 13.5px; line-height: 1.4; color: #c4d1ee; }
+
+.rolebar { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 360px; font-family: var(--display); font-size: 16px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+#roles { display: flex; flex: 1; gap: 6px; }
+#roles button { flex: 1 1 auto; padding: 6px 4px 7px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, .25); background: rgba(255, 255, 255, .06); color: #dbe5fb; font-family: var(--display); font-size: 16px; font-weight: 700; font-style: italic; letter-spacing: .03em; white-space: nowrap; }
+#roles button.on { background: #fff; border-color: #fff; color: #17174f; }
+@media (max-height: 700px) {
+  .how { font-size: 13px; gap: 7px; }
+  .how svg { flex-basis: 28px; height: 28px; }
+  .sheet { padding-top: 14px; gap: 8px; }
+  .hint { display: none; }
+  .btn { padding: 9px 18px 10px; font-size: 21px; }
+  h1 { font-size: clamp(56px, 18vw, 80px); }
+  .logo { padding-top: calc(var(--safe-t) + 54px); }
+  .chip { margin-top: 10px; }
+}

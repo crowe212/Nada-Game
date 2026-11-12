@@ -18,14 +18,38 @@
     'New York', 'Vermont', 'New Hampshire', 'Maine', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New Jersey', 'Delaware', 'Maryland',
     'Virginia', 'Tennessee', 'Arkansas', 'Louisiana', 'Mississippi', 'Alabama', 'North Carolina', 'South Carolina', 'Georgia', 'Florida'];
 
-  // The "old traditional way" of out-of-state titling.
+  // The old way of doing out-of-state deals, in the words prospects use on sales calls.
   const HAZARDS = [
-    { label: 'WRONG FEE', msg: 'Wrong fee — there goes the profit!' },
+    { label: 'WRONG FEE', msg: "Not $800 — it's actually $925!" },
+    { label: 'RETURNED', msg: 'Packet returned. Again.' },
+    { label: 'GOOGLING IT', msg: 'Googling it and hoping…' },
+    { label: 'NO ETA', msg: '“Where are my plates?!”' },
+    { label: 'DUPE TITLE', msg: 'Duplicate title nightmare!' },
     { label: 'RE-SIGN', msg: 'Missed signature — re-sign!' },
-    { label: 'LATE PENALTY', msg: 'Late penalty!' },
-    { label: 'RETURNED', msg: 'Returned for corrections!' },
-    { label: 'TITLE BRAND', msg: 'Unknown title brand on the trade!' },
-    { label: 'NO STATUS', msg: 'Weeks in the dark, zero visibility!' },
+    { label: 'LIEN ISSUE', msg: 'Lien not perfected!' },
+    { label: 'MORE HOOPS', msg: 'More hoops to jump through!' },
+    { label: 'LATE PENALTY', msg: 'Late penalty — who eats the cost?' },
+  ];
+
+  // States prospects call the hardest. They get more obstacles and double state-line points,
+  // and a Fast Fact pops up as you enter. These come from sales-call notes, NOT verified
+  // rules: have a title expert check each line before the show.
+  const FAST_FACTS = {
+    California: 'Smog and VIN checks, late fees',
+    Colorado: 'Taxes are set county by county',
+    Pennsylvania: 'No online title application',
+    'Rhode Island': 'VIN check at a police station',
+    'New Hampshire': 'Carbon-copy paper forms',
+    'North Carolina': 'Fee math can take all day',
+    Florida: 'Tax reciprocity rules',
+  };
+
+  // "I'm a…" picker on the menu; tailors the message on the results screen.
+  const ROLES = [
+    { id: 'clerk', label: 'Title Clerk', line: 'Pre-filled forms and clear checklists mean fewer returns.' },
+    { id: 'office', label: 'Controller', line: 'Fewer write-offs and full oversight of every deal.' },
+    { id: 'finance', label: 'Finance', line: 'Exact fees at the point of sale, without slowing the deal.' },
+    { id: 'gm', label: 'GM', line: 'Fewer headaches for your team and a healthier bottom line.' },
   ];
 
   // The look of each stretch of the trip. `at` is the position in STATES where it begins:
@@ -178,7 +202,8 @@
       rowAcc: 0, scenAcc: 0, rowN: 0, lastTwo: false, nextShield: 4,
       finished: false, endDelay: 0,
     };
-    toast('California → Florida. GO!', '#fff', 1.3);
+    toast('California → Florida. GO!', '#fff', 1.6);
+    toast(`Fast Fact: ${FAST_FACTS.California}`, '#7fd8fb', 1.6);
   }
 
   function start() {
@@ -197,14 +222,14 @@
     el.hud.hidden = true;
     el.mute.hidden = false;
     const n = g.state + 1;
-    const rank = n >= 50 ? 'Coast-to-Coast Legend' : n >= 42 ? 'Cross-Country Closer' : n >= 30 ? 'Multi-State Pro'
-      : n >= 16 ? 'Title Clerk in Training' : 'Stuck at the DMV counter';
+    const rank = n >= 50 ? "The Dealer's DMV" : n >= 42 ? 'Registration Master' : n >= 30 ? 'Unsung Hero of the Title Desk'
+      : n >= 20 ? 'Herding Cats' : n >= 10 ? 'Googling Everything' : 'Hope-and-Pray Method';
     $('rank').textContent = rank;
     $('finalScore').textContent = fmt(g.score);
     $('finalStates').textContent = n >= 50
       ? `All 50 states titled with ${Math.ceil(g.timeLeft)}s to spare!`
       : `${n} of 50 states titled · made it to ${STATES[g.state]}`;
-    $('cta').textContent = CTA;
+    $('cta').textContent = `${role().line} ${CTA}`;
     $('saveForm').hidden = false;
     $('name').value = store.get('c2c.name', '');
     renderBoard($('overBoard'), 5);
@@ -267,7 +292,9 @@
     g.rowN++;
     if (g.rowN <= 2) return;
     const diff = clamp((RUN_SECONDS - g.timeLeft) / RUN_SECONDS, 0, 1);
-    const nH = Math.random() < 0.18 ? 0 : (!g.lastTwo && Math.random() < 0.22 + diff * 0.3 ? 2 : 1);
+    const at = Math.min(STATES.length - 1, Math.floor(g.state + 1 - g.toLine / STATE_LEN + d / STATE_LEN));
+    const tough = !!FAST_FACTS[STATES[at]]; // the state this row will be standing in
+    const nH = Math.random() < (tough ? 0.05 : 0.18) ? 0 : (!g.lastTwo && Math.random() < 0.22 + diff * 0.3 + (tough ? 0.25 : 0) ? 2 : 1);
     const lanes = [0, 1, 2].sort(() => Math.random() - 0.5);
     const free = lanes.slice(nH);
     g.lastTwo = nH === 2;
@@ -294,7 +321,7 @@
     if (g.shields > 0) { // Safety Margin: the shields are spent covering the hit
       g.shields = 0; g.invuln = 0.9; g.shake = 0.15;
       burst(x, playerY - 30, '#ffc533', 16);
-      toast('Safety Margin™ covered it — shields spent', '#ffc533', 1.3);
+      toast('Safety Margin™ covered it — rainy-day fund spent', '#ffc533', 1.3);
       sfx.cover();
       return;
     }
@@ -311,6 +338,7 @@
     g.autopilot = AUTOPILOT_SECONDS; g.invuln = 0; g.flash = 0.5;
     add(2000);
     toast('JACKPOT!', '#ffc533', 1.5, true);
+    toast('We do everything else.', '#fff', 1.5);
     burst(W / 2, H * 0.42, '#ffc533', 46);
     burst(W / 2, H * 0.42, '#fff3b0', 20);
     sfx.jackpot();
@@ -319,7 +347,12 @@
   function crossStateLine() {
     g.state++;
     g.toLine += STATE_LEN;
-    add(250);
+    const fact = FAST_FACTS[STATES[g.state]];
+    add(fact ? 500 : 250);
+    if (fact && g.state < STATES.length - 1) {
+      toast(`FAST FACT · ${STATES[g.state].toUpperCase()}`, '#7fd8fb', 1.9);
+      toast(fact, '#fff', 1.9);
+    }
     sfx.state();
     if (g.state >= STATES.length - 1) {
       g.finished = true; g.endDelay = 2.4; g.autopilot = 0; g.flash = 0.5;
@@ -715,7 +748,7 @@
     if (d > SPAWN_D + 30 || d < -9) return;
     const p = proj(d), s = p.s, cx = W / 2, half = roadHalf * 1.2 * s;
     const h = roadHalf * 1.42 * s, sh = roadHalf * 0.46 * s, pw = Math.max(1.5, 9 * s);
-    const finish = idx === STATES.length - 1;
+    const finish = idx === STATES.length - 1, tough = !finish && !!FAST_FACTS[name];
     ctx.globalAlpha = clamp((SPAWN_D + 30 - d) / 30, 0, 1) * clamp((d + 9) / 5, 0, 1);
     for (const side of [-1, 1]) {
       const x = cx + side * half;
@@ -734,7 +767,7 @@
       ctx.fillStyle = '#8791a3'; ctx.fillRect(cx - half, top, half * 2, Math.max(1, sh * 0.1));
     }
     const sw = half * 1.5, sy = top + sh * 0.16;
-    ctx.fillStyle = finish ? vgrad(sy, sy + sh, [[0, '#2a7cf5'], [1, '#1246a8']]) : vgrad(sy, sy + sh, [[0, '#1e9a58'], [1, '#0e6a3a']]);
+    ctx.fillStyle = finish ? vgrad(sy, sy + sh, [[0, '#2a7cf5'], [1, '#1246a8']]) : vgrad(sy, sy + sh, tough ? [[0, '#f58a3c'], [1, '#c2531a']] : [[0, '#1e9a58'], [1, '#0e6a3a']]);
     rr(cx - sw / 2, sy, sw, sh, sh * 0.14); ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1, 3 * s);
     rr(cx - sw / 2 + 3 * s, sy + 3 * s, sw - 6 * s, sh - 6 * s, sh * 0.1); ctx.stroke();
@@ -742,8 +775,8 @@
       ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = font(sh * 0.5);
       ctx.fillText(finish ? `${name.toUpperCase()} · ${EVENT.toUpperCase()}` : name.toUpperCase(), cx, sy + sh * 0.4, sw * 0.9);
-      ctx.fillStyle = finish ? '#ffc533' : '#c9f3da'; ctx.font = font(sh * 0.24, 600);
-      ctx.fillText(finish ? 'FINISH  ·  50 OF 50' : `STATE LINE  ·  ${idx + 1} OF 50`, cx, sy + sh * 0.78, sw * 0.9);
+      ctx.fillStyle = finish ? '#ffc533' : tough ? '#fff3d6' : '#c9f3da'; ctx.font = font(sh * 0.24, 600);
+      ctx.fillText(finish ? 'FINISH  ·  50 OF 50' : tough ? `TOUGH STATE  ·  2× POINTS  ·  ${idx + 1} OF 50` : `STATE LINE  ·  ${idx + 1} OF 50`, cx, sy + sh * 0.78, sw * 0.9);
     }
     ctx.globalAlpha = 1;
   }
@@ -954,7 +987,7 @@
     // toasts
     g.toasts.forEach((ts, i) => {
       const age = ts.max - ts.life;
-      const size = ts.big ? Math.min(W * 0.2, 92) : Math.min(W * 0.068, 30);
+      const size = ts.big ? Math.min(W * 0.2, 92) : Math.min(W * 0.068, 30) * clamp(34 / ts.text.length, 0.72, 1);
       const y = H * 0.4 + i * 40 + (ts.big ? -16 : 16);
       const sc = 1 + clamp(1 - age / 0.16, 0, 1) * 0.6;
       ctx.save();
@@ -1073,6 +1106,19 @@
       else { await navigator.clipboard.writeText(text); $('share').textContent = 'Copied!'; setTimeout(() => { $('share').textContent = 'Share my score'; }, 1500); }
     } catch (err) { /* share cancelled */ }
   });
+
+  let roleId = store.get('c2c.role', ROLES[0].id);
+  function role() { return ROLES.find((r) => r.id === roleId) || ROLES[0]; }
+  ROLES.forEach((r) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = r.label; b.setAttribute('role', 'radio');
+    b.addEventListener('click', () => { roleId = r.id; store.set('c2c.role', roleId); paintRoles(); });
+    $('roles').appendChild(b);
+  });
+  function paintRoles() {
+    [...$('roles').children].forEach((b, i) => { const on = ROLES[i].id === role().id; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+  }
+  paintRoles();
 
   $('eventTag').textContent = `${BRAND}™ by ${COMPANY} · ${EVENT}`;
   document.querySelectorAll('.brand').forEach((n) => { n.textContent = BRAND; });
