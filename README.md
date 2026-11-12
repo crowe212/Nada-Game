@@ -32,8 +32,11 @@ Drive from California to Florida, title all 50 states, and get on the leaderboar
 
 On a computer: `npm start`, then open http://localhost:8080.
 
-On a phone without the App Store: host the `www` folder on any website, open it in
-Safari, then Share → **Add to Home Screen**. It opens full screen and works offline.
+On a phone: the game publishes itself to GitHub Pages whenever `www` changes (see
+`.github/workflows/pages.yml`). This needs Pages switched on once: repository
+Settings → Pages → Source → **GitHub Actions**. The link is then
+https://crowe212.github.io/Nada-Game/. Open it in Safari and use Share →
+**Add to Home Screen** to get a full-screen icon that also works offline.
 
 ## Build the iPhone app
 
@@ -50,7 +53,7 @@ After changing anything in `www`, run `npm install` once and then
 ## Change the wording
 
 The top of `www/game.js` has the brand name, event name, end-of-game message, run
-length and jackpot length. The hazard labels and state order are right below.
+length, jackpot length and license plate text. The hazard labels and state order are right below.
 
 ## Known limits
 
