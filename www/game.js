@@ -8,6 +8,7 @@
   const EVENT = 'NADA Show 2027';
   const CTA = 'Out-of-state titling, done in days, not months. Get a demo at dlr50.com.';
   const PLATE = 'DLR50';      // text on the car's license plate
+  const BUILD = 'v12';         // shown at the bottom of the menu so you can tell which version a phone has loaded
   const RUN_SECONDS = 90;      // also the length of the temp tag, one day per second
   // Shared leaderboard: paste the web-app URL from tools/leaderboard-apps-script.gs here.
   // Left empty, scores are kept on each device only.
@@ -220,13 +221,14 @@
   }
   // Theme song: plays from the first tap and loops. If the file is missing, the synth loop below is used during runs.
   const SONG_URLS = ['audio/perfect-it.mp3', 'audio/PERFECT%20IT.mp3', 'audio/Perfect%20It.mp3', 'audio/perfect%20it.mp3'];
-  let song = null, songReady = false;
+  let song = null, songReady = false, songNote = '';
   (function loadSong(i) {
     if (i >= SONG_URLS.length) { song = null; return; }
     try {
       const a = new Audio(SONG_URLS[i]); a.loop = true; a.volume = 0.42; a.preload = 'auto';
+      a.setAttribute('playsinline', ''); a.style.display = 'none'; document.body.appendChild(a);
       a.addEventListener('canplay', () => { songReady = true; }, { once: true });
-      a.addEventListener('error', () => { if (song === a) song = null; loadSong(i + 1); }, { once: true });
+      a.addEventListener('error', () => { songNote = `could not load ${SONG_URLS[i]}`; a.remove(); if (song === a) song = null; loadSong(i + 1); }, { once: true });
       song = a;
     } catch (e) { song = null; }
   })(0);
@@ -234,7 +236,7 @@
     // iPhones do not load audio until a tap asks it to play, so do not wait for it to be "ready" first.
     if (!song || muted || !song.paused || document.hidden) return;
     const started = song.play();
-    if (started && started.then) started.then(musicStop).catch(() => {});
+    if (started && started.then) started.then(() => { songNote = ''; musicStop(); }).catch((e) => { songNote = `play refused: ${e && e.name}`; });
   }
   function songPause() { if (song) song.pause(); }
 
@@ -1856,6 +1858,11 @@
       : `${paint().name} · you have ${have} star${have === 1 ? '' : 's'}`;
   }
   paintPaints();
+  // Tap the version label to see what the sound system is doing (for troubleshooting on a phone).
+  const audioStatus = () => `${BUILD} · song ${song ? (song.error ? 'error ' + song.error.code : song.paused ? 'not playing' : 'playing') + ' (loaded ' + song.readyState + '/4)' : 'missing'}`
+    + `${songNote ? ' · ' + songNote : ''} · effects ${ac ? ac.state : 'not started'} · ${muted ? 'muted' : 'sound on'}`;
+  $('build').textContent = BUILD;
+  $('build').addEventListener('click', () => { $('build').textContent = audioStatus(); });
   $('boardKicker').textContent = LEADERBOARD_URL ? EVENT : 'This device';
   fetchRemote();
   $('chip').textContent = `50 states · one ${RUN_SECONDS}-day temp tag`;

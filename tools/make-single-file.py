@@ -13,7 +13,7 @@ css = css.replace('height: 100vh;\n  height: 100dvh;', 'height: 100%;')
 css = ':root { color-scheme: dark; height: 100%; box-sizing: border-box; }\n' + css
 js = (root / 'game.js').read_text()
 js = re.sub(r"\n  // Offline support.*?\n  }\n", "\n", js, flags=re.S)
-body = re.search(r'<body>(.*)<script src="game.js"></script>', (root / 'index.html').read_text(), re.S).group(1)
+body = re.search(r'<body>(.*)<script src="game.js[^"]*"></script>', (root / 'index.html').read_text(), re.S).group(1)
 out = f'<title>Coast to Coast</title>\n<style>\n{css}</style>\n{body}<script>\n{js}</script>\n'
 pathlib.Path(sys.argv[1]).write_text(out)
 print(len(out), 'bytes')
