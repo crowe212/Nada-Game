@@ -1,18 +1,23 @@
 # Coast to Coast
 
-A 60-second, 50-state road trip game for the NADA Show 2027 booth.
-Drive from California to Florida, title all 50 states, and get on the leaderboard.
+A 60-second, 50-state road trip game for the NADA Show 2027 booth, built around
+DLR50™ by DLRdmv (out-of-state titling in all 50 states). Drive from California to
+Florida, title all 50 states, and get on the leaderboard.
 
 ## How it plays
 
 - **Tap left / right** to change lanes (arrow keys on a computer).
 - **Grab titles** to score. Every 4 in a row raises your multiplier (up to ×5).
-- **Dodge the red tape**: REJECTED, WRONG FEE, MISFILED, DMV LINE, LATE FEE, RE-SUBMIT.
-  A hit slows you down and wipes your streak.
+- **Dodge the old way**: WRONG FEE, RE-SIGN, LATE PENALTY, RETURNED, TITLE BRAND,
+  NO STATUS. A hit slows you down and wipes your streak.
 - **Press your luck**: collect three shields for the JACKPOT. For a few seconds
-  DLRdmv Autopilot takes over — you speed up, can't crash, and every piece of red
-  tape gets stamped APPROVED for points. Hit red tape before the third shield and
-  you lose the shields you were holding.
+  DLR50 goes Full-Service — you speed up, can't crash, and every piece of red tape
+  gets stamped APPROVED for points. Hit red tape before the third shield and the
+  shields are spent covering it (Safety Margin™): no slowdown, but you start the
+  jackpot count over.
+- The route is ordered so the scenery matches the states: Pacific coast and Hawaii,
+  snowy Alaska, the Northwest and Rockies, the desert Southwest, Texas and the
+  plains, the Northeast in fall colour, the South, and a Florida sunset.
 - Each state line is worth points. Reaching all 50 before the clock runs out pays a
   big bonus plus extra for every second left.
 
@@ -24,7 +29,7 @@ Drive from California to Florida, title all 50 states, and get on the leaderboar
 | Short, quick racing game with a leaderboard | 60-second runs, score, leaderboard, share button |
 | Three shields = jackpot (slot machine) | Three shield slots at the top of the screen |
 | Press Your Luck with penalties like "you misfiled a form" | Red tape wipes your shields before the jackpot |
-| The title clerk grind, then life with the product | Red tape is the grind; Autopilot is the product doing it for you |
+| The title clerk grind, then life with the product | Red tape is the old way; Full-Service mode is DLR50 doing it for you |
 | "Focused on 50" | 50 state lines to cross |
 | Web-based instead of a download | Runs in the phone browser; the iPhone app is optional |
 
@@ -52,8 +57,9 @@ After changing anything in `www`, run `npm install` once and then
 
 ## Change the wording
 
-The top of `www/game.js` has the brand name, event name, end-of-game message, run
-length, jackpot length and license plate text. The hazard labels and state order are right below.
+The top of `www/game.js` has the product and company names, event name, end-of-game message, run
+length, jackpot length and license plate text. The hazard labels, state order and scenery regions are right below. Product
+wording was taken from dlr50.com.
 
 ## Known limits
 

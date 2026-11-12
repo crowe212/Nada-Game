@@ -3,46 +3,60 @@
   'use strict';
 
   // ---------- Easy-to-edit settings ----------
-  const BRAND = 'DLRdmv';
+  const BRAND = 'DLR50';      // the product
+  const COMPANY = 'DLRdmv';   // the company
   const EVENT = 'NADA Show 2027';
-  const CTA = `In real life, ${BRAND} does the paperwork grind for you. Stop by our booth for a demo.`;
-  const PLATE = 'DLRDMV';     // text on the car's license plate
+  const CTA = 'Out-of-state titling, done in days, not months. Get a demo at dlr50.com.';
+  const PLATE = 'DLR50';      // text on the car's license plate
   const RUN_SECONDS = 60;
   const AUTOPILOT_SECONDS = 4;
 
-  const STATES = ['California', 'Oregon', 'Washington', 'Alaska', 'Hawaii', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah',
-    'Arizona', 'New Mexico', 'Colorado', 'North Dakota', 'South Dakota', 'Nebraska', 'Kansas', 'Oklahoma', 'Texas', 'Minnesota',
-    'Iowa', 'Missouri', 'Arkansas', 'Louisiana', 'Wisconsin', 'Illinois', 'Michigan', 'Indiana', 'Ohio', 'Kentucky',
-    'Tennessee', 'Mississippi', 'Alabama', 'Maine', 'New Hampshire', 'Vermont', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New York',
-    'New Jersey', 'Pennsylvania', 'Delaware', 'Maryland', 'West Virginia', 'Virginia', 'North Carolina', 'South Carolina', 'Georgia', 'Florida'];
+  // Route order. Scenery regions below are keyed to positions in this list.
+  const STATES = ['California', 'Hawaii', 'Alaska', 'Washington', 'Oregon', 'Idaho', 'Montana', 'Wyoming', 'Colorado', 'Utah',
+    'Nevada', 'Arizona', 'New Mexico', 'Texas', 'Oklahoma', 'Kansas', 'Nebraska', 'South Dakota', 'North Dakota', 'Minnesota',
+    'Iowa', 'Wisconsin', 'Illinois', 'Missouri', 'Indiana', 'Michigan', 'Ohio', 'Kentucky', 'West Virginia', 'Pennsylvania',
+    'New York', 'Vermont', 'New Hampshire', 'Maine', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New Jersey', 'Delaware', 'Maryland',
+    'Virginia', 'Tennessee', 'Arkansas', 'Louisiana', 'Mississippi', 'Alabama', 'North Carolina', 'South Carolina', 'Georgia', 'Florida'];
 
+  // The "old traditional way" of out-of-state titling.
   const HAZARDS = [
-    { label: 'REJECTED', msg: 'Title rejected!' },
-    { label: 'WRONG FEE', msg: 'Wrong fee — redo it!' },
-    { label: 'MISFILED', msg: 'Misfiled form!' },
-    { label: 'DMV LINE', msg: 'Back of the DMV line!' },
-    { label: 'LATE FEE', msg: 'Late fee!' },
-    { label: 'RE-SUBMIT', msg: 'Kicked back — resubmit!' },
+    { label: 'WRONG FEE', msg: 'Wrong fee — there goes the profit!' },
+    { label: 'RE-SIGN', msg: 'Missed signature — re-sign!' },
+    { label: 'LATE PENALTY', msg: 'Late penalty!' },
+    { label: 'RETURNED', msg: 'Returned for corrections!' },
+    { label: 'TITLE BRAND', msg: 'Unknown title brand on the trade!' },
+    { label: 'NO STATUS', msg: 'Weeks in the dark, zero visibility!' },
   ];
 
-  // The look of each stretch of the trip, starting at a given state index.
+  // The look of each stretch of the trip. `at` is the position in STATES where it begins:
+  // 0 California, 2 Alaska, 3 Washington, 9 Utah, 13 Texas, 27 Kentucky, 41 Tennessee, 46 North Carolina.
   const BIOMES = [
-    { at: 0, kinds: ['palm', 'palm', 'palm', 'rock'], // Pacific coast
+    { at: 0, kinds: ['palm', 'palm', 'palm', 'rock'], // Pacific coast and Hawaii
       top: [22, 112, 214], mid: [86, 172, 240], hor: [206, 236, 250], near: [224, 190, 124], far: [242, 224, 172],
       m1: [150, 190, 222], m2: [104, 158, 176], amp: 0.8, jag: 0.15, mesa: 0, sunY: 0.5, sunR: 1, sun: [255, 249, 222], cloud: 0.9, warm: 0 },
-    { at: 7, kinds: ['cactus', 'cactus', 'rock', 'cactus'], // desert
-      top: [34, 112, 206], mid: [132, 186, 234], hor: [255, 224, 176], near: [198, 116, 62], far: [234, 172, 112],
-      m1: [214, 150, 118], m2: [172, 92, 60], amp: 1.15, jag: 0.1, mesa: 1, sunY: 0.42, sunR: 1.1, sun: [255, 244, 200], cloud: 0.35, warm: 0.2 },
-    { at: 15, kinds: ['hay', 'hay', 'barn', 'oak', 'turbine'], // plains
-      top: [40, 124, 224], mid: [116, 184, 246], hor: [226, 243, 253], near: [168, 166, 58], far: [216, 208, 122],
-      m1: [156, 196, 178], m2: [128, 170, 96], amp: 0.35, jag: 0, mesa: 0, sunY: 0.45, sunR: 1, sun: [255, 250, 226], cloud: 1, warm: 0 },
-    { at: 28, kinds: ['pine', 'pine', 'pine', 'oak'], // forests and mountains
+    { at: 2, kinds: ['snowpine', 'snowpine', 'snowpine', 'rock'], // Alaska
+      top: [52, 124, 200], mid: [150, 196, 232], hor: [234, 243, 250], near: [222, 233, 245], far: [244, 248, 252],
+      m1: [200, 216, 236], m2: [148, 174, 206], amp: 1.5, jag: 0.85, mesa: 0, sunY: 0.62, sunR: 0.9, sun: [255, 252, 240], cloud: 0.9, warm: 0 },
+    { at: 3, kinds: ['pine', 'pine', 'pine', 'oak'], // Pacific Northwest and the Rockies
       top: [34, 102, 186], mid: [106, 166, 218], hor: [216, 236, 238], near: [50, 126, 70], far: [122, 178, 124],
       m1: [136, 170, 196], m2: [56, 104, 98], amp: 1.3, jag: 0.75, mesa: 0, sunY: 0.5, sunR: 0.9, sun: [255, 250, 230], cloud: 0.8, warm: 0 },
-    { at: 46, kinds: ['palm', 'palm', 'oak', 'palm'], // southeast at sunset
+    { at: 9, kinds: ['cactus', 'cactus', 'rock', 'cactus'], // desert Southwest
+      top: [34, 112, 206], mid: [132, 186, 234], hor: [255, 224, 176], near: [198, 116, 62], far: [234, 172, 112],
+      m1: [214, 150, 118], m2: [172, 92, 60], amp: 1.15, jag: 0.1, mesa: 1, sunY: 0.42, sunR: 1.1, sun: [255, 244, 200], cloud: 0.35, warm: 0.2 },
+    { at: 13, kinds: ['hay', 'hay', 'barn', 'oak', 'turbine'], // Texas, the Great Plains and the Midwest
+      top: [40, 124, 224], mid: [116, 184, 246], hor: [226, 243, 253], near: [168, 166, 58], far: [216, 208, 122],
+      m1: [156, 196, 178], m2: [128, 170, 96], amp: 0.35, jag: 0, mesa: 0, sunY: 0.45, sunR: 1, sun: [255, 250, 226], cloud: 1, warm: 0 },
+    { at: 27, kinds: ['maple', 'maple', 'pine', 'maple', 'oak'], // Appalachia and the Northeast in fall colour
+      top: [44, 112, 196], mid: [120, 176, 226], hor: [230, 238, 232], near: [84, 134, 60], far: [152, 178, 110],
+      m1: [186, 158, 146], m2: [156, 98, 58], amp: 0.85, jag: 0.25, mesa: 0, sunY: 0.5, sunR: 1, sun: [255, 248, 224], cloud: 0.85, warm: 0 },
+    { at: 41, kinds: ['oak', 'oak', 'pine', 'oak', 'barn'], // the South, late afternoon
+      top: [52, 108, 198], mid: [156, 186, 222], hor: [255, 230, 186], near: [58, 130, 68], far: [142, 180, 110],
+      m1: [156, 182, 170], m2: [70, 120, 94], amp: 0.45, jag: 0.05, mesa: 0, sunY: 0.64, sunR: 1.35, sun: [255, 236, 188], cloud: 0.8, warm: 0.35 },
+    { at: 46, kinds: ['palm', 'palm', 'oak', 'palm'], // Carolinas to Florida at sunset
       top: [40, 32, 104], mid: [196, 84, 122], hor: [255, 176, 98], near: [38, 104, 82], far: [124, 138, 108],
       m1: [128, 74, 126], m2: [52, 48, 94], amp: 0.5, jag: 0.1, mesa: 0, sunY: 0.86, sunR: 1.9, sun: [255, 226, 160], cloud: 0.75, warm: 1 },
   ];
+  const BLEND = 0.25; // how much of the previous state the scenery change is spread over
 
   // ---------- World tuning ----------
   const K = 0.035;            // perspective strength
@@ -99,6 +113,7 @@
   const sfx = {
     title: (m) => tone(620 + m * 70, 0.08, 'triangle', 0.09),
     shield: (n) => tone(520 + n * 180, 0.16, 'square', 0.06),
+    cover: () => { tone(330, 0.12, 'triangle', 0.09); tone(247, 0.2, 'triangle', 0.08, 0.1); },
     hit: () => { tone(140, 0.25, 'sawtooth', 0.1); tone(90, 0.35, 'square', 0.07, 0.05); },
     state: () => { tone(880, 0.07, 'sine', 0.07); tone(1175, 0.1, 'sine', 0.07, 0.07); },
     jackpot: () => [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.16, 'square', 0.07, i * 0.08)),
@@ -138,11 +153,11 @@
 
   function biomeAt(p) {
     let i = 0;
-    while (i < BIOMES.length - 1 && p >= BIOMES[i + 1].at - 3) i++;
+    while (i < BIOMES.length - 1 && p >= BIOMES[i + 1].at - BLEND) i++;
     const cur = BIOMES[i];
     if (i === 0 || p >= cur.at) return cur;
     const prev = BIOMES[i - 1];
-    let t = clamp((p - (cur.at - 3)) / 3, 0, 1);
+    let t = clamp((p - (cur.at - BLEND)) / BLEND, 0, 1);
     t = t * t * (3 - 2 * t);
     const out = { kinds: t > 0.5 ? cur.kinds : prev.kinds };
     for (const k in cur) {
@@ -275,12 +290,19 @@
   }
 
   function hit(o) {
-    const lost = g.shields;
-    g.shields = 0; g.streak = 0; g.mult = 1;
+    const x = laneX(g.px, 1);
+    if (g.shields > 0) { // Safety Margin: the shields are spent covering the hit
+      g.shields = 0; g.invuln = 0.9; g.shake = 0.15;
+      burst(x, playerY - 30, '#ffc533', 16);
+      toast('Safety Margin™ covered it — shields spent', '#ffc533', 1.3);
+      sfx.cover();
+      return;
+    }
+    g.streak = 0; g.mult = 1;
     g.speed = 0.35; g.clean *= 0.3; g.invuln = 1; g.shake = 0.4;
-    burst(laneX(g.px, 1), playerY - 30, '#ff5a5f', 18);
-    burst(laneX(g.px, 1), playerY - 30, '#ffffff', 8);
-    toast(lost ? `${o.hz.msg} ${lost} shield${lost > 1 ? 's' : ''} lost` : o.hz.msg, '#ff9a9a', 1.2);
+    burst(x, playerY - 30, '#ff5a5f', 18);
+    burst(x, playerY - 30, '#ffffff', 8);
+    toast(o.hz.msg, '#ff9a9a', 1.2);
     sfx.hit();
   }
 
@@ -337,7 +359,7 @@
     g.flash = Math.max(0, g.flash - dt);
     if (g.autopilot > 0) {
       g.autopilot -= dt;
-      if (g.autopilot <= 0) { g.invuln = 1.2; toast('Back to manual…', '#fff', 0.9); }
+      if (g.autopilot <= 0) { g.invuln = 1.2; toast('Back to Self-Service…', '#fff', 0.9); }
     }
 
     // State lines
@@ -354,7 +376,8 @@
     g.scenAcc += move;
     while (g.scenAcc >= 11) {
       g.scenAcc -= 11;
-      g.scen.push(makeScenery(biomeAt(g.state + 1 - g.toLine / STATE_LEN), SPAWN_D + 20 - g.scenAcc));
+      const sd = SPAWN_D + 20 - g.scenAcc; // pick scenery for the state it will stand in, not the one we are in
+      g.scen.push(makeScenery(biomeAt(g.state + 1 - g.toLine / STATE_LEN + sd / STATE_LEN), sd));
     }
 
     // Objects
@@ -427,7 +450,7 @@
     if (hudCache.auto !== auto) {
       hudCache.auto = auto;
       el.banner.hidden = !auto;
-      el.banner.textContent = `${BRAND} AUTOPILOT`;
+      el.banner.textContent = `${BRAND}™ FULL-SERVICE`;
     }
     const prog = clamp((g.state + 1 - g.toLine / STATE_LEN) / (STATES.length - 1), 0.02, 1);
     el.bar.style.width = (prog * 100).toFixed(1) + '%';
@@ -545,7 +568,7 @@
     };
     wedge(-roadHalf * 1.42, roadHalf * 1.42, 'rgba(0,0,0,.09)');
     const seg = 7, koff = dist % (seg * 2);
-    const kerbA = auto ? '#ffc533' : '#1f6feb', kerbB = '#f4f6fb';
+    const kerbA = auto ? '#ffc533' : '#25aae2', kerbB = '#f4f6fb';
     let i = 0;
     for (let d = -14 - koff; d < 230; d += seg, i++) {
       const a = proj(d + seg), c = proj(d);
@@ -654,13 +677,24 @@
       }
       ctx.restore();
       disc('#d5dce6', 0, -u * 2.6, u * 0.08);
-    } else if (k === 'pine') {
+    } else if (k === 'pine' || k === 'snowpine') {
+      const snow = k === 'snowpine';
       ctx.fillStyle = '#5a3d24'; ctx.fillRect(-u * 0.07, -u * 0.35, u * 0.14, u * 0.35);
       for (let i = 0; i < 3; i++) {
         const w = u * (0.64 - i * 0.15), by = -u * (0.28 + i * 0.5), top = by - u * 0.8;
-        poly('#35a064', [-w, by, 0, top, 0, by]);
-        poly('#1c6a44', [0, by, 0, top, w, by]);
+        poly(snow ? '#3d8f78' : '#35a064', [-w, by, 0, top, 0, by]);
+        poly(snow ? '#22625a' : '#1c6a44', [0, by, 0, top, w, by]);
+        if (snow) {
+          poly('#ffffff', [-w * 0.62, by - u * 0.3, 0, top, 0, by - u * 0.22, -w * 0.3, by - u * 0.38]);
+          poly('#d5e3f2', [0, by - u * 0.22, 0, top, w * 0.62, by - u * 0.3, w * 0.3, by - u * 0.38]);
+        }
       }
+    } else if (k === 'maple') {
+      const c = [['#a8401c', '#e06a2b', '#f6a04a'], ['#96262a', '#d4433a', '#f07f62'], ['#b07a0c', '#e3ac27', '#f7d566']][(sc.seed * 3 | 0) % 3];
+      ctx.fillStyle = '#4e3520'; ctx.fillRect(-u * 0.08, -u * 0.7, u * 0.16, u * 0.7);
+      disc(c[0], 0, -u * 1.02, u * 0.56); disc(c[0], u * 0.4, -u * 0.84, u * 0.36); disc(c[0], -u * 0.42, -u * 0.82, u * 0.36);
+      disc(c[1], -u * 0.12, -u * 1.12, u * 0.42); disc(c[1], -u * 0.44, -u * 0.88, u * 0.25);
+      disc(c[2], -u * 0.22, -u * 1.26, u * 0.2);
     } else if (k === 'oak') {
       ctx.fillStyle = '#5a3d24'; ctx.fillRect(-u * 0.08, -u * 0.7, u * 0.16, u * 0.7);
       disc('#2a7a44', 0, -u * 1.02, u * 0.56); disc('#2a7a44', u * 0.4, -u * 0.84, u * 0.36); disc('#2a7a44', -u * 0.42, -u * 0.82, u * 0.36);
@@ -669,10 +703,10 @@
     } else if (k === 'bill') {
       ctx.fillStyle = '#4c5566'; ctx.fillRect(-u * 0.72, -u * 0.95, u * 0.1, u * 0.95); ctx.fillRect(u * 0.62, -u * 0.95, u * 0.1, u * 0.95);
       ctx.fillStyle = '#0b1b3a'; rr(-u * 1.12, -u * 1.92, u * 2.24, u * 1.12, u * 0.08); ctx.fill();
-      ctx.fillStyle = vgrad(-u * 1.86, -u * 0.86, [[0, '#2a7cf5'], [1, '#1553c0']]); rr(-u * 1.06, -u * 1.86, u * 2.12, u, u * 0.05); ctx.fill();
+      ctx.fillStyle = vgrad(-u * 1.86, -u * 0.86, [[0, '#2b2a7a'], [1, '#17174f']]); rr(-u * 1.06, -u * 1.86, u * 2.12, u, u * 0.05); ctx.fill();
       ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = font(u * 0.52); ctx.fillText(BRAND, 0, -u * 1.48, u * 1.9);
-      ctx.fillStyle = '#ffc533'; ctx.font = font(u * 0.26, 700); ctx.fillText('ALL 50 STATES', 0, -u * 1.08, u * 1.9);
+      ctx.font = font(u * 0.56); ctx.fillText(BRAND + '™', 0, -u * 1.48, u * 1.9);
+      ctx.fillStyle = '#4cc4f5'; ctx.font = font(u * 0.26, 700); ctx.fillText('ALL 50 STATES', 0, -u * 1.08, u * 1.9);
     }
     ctx.restore();
   }
@@ -774,14 +808,14 @@
       ctx.fillStyle = '#0d2a66'; rr(-40, -52, 84, 108, 9); ctx.fill();       // depth edge
       ctx.fillStyle = vgrad(-54, 54, [[0, '#ffffff'], [1, '#e3ebf8']]); rr(-44, -56, 84, 108, 9); ctx.fill();
       ctx.save(); rr(-44, -56, 84, 108, 9); ctx.clip();
-      ctx.fillStyle = vgrad(-56, -30, [[0, '#3d8bff'], [1, '#1a5fd0']]); ctx.fillRect(-44, -56, 84, 27);
+      ctx.fillStyle = vgrad(-56, -30, [[0, '#4cc4f5'], [1, '#1c93cc']]); ctx.fillRect(-44, -56, 84, 27);
       ctx.restore();
       ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = font(19);
       if (lane > 30) ctx.fillText('TITLE', -2, -42);
       ctx.fillStyle = '#b3c1dc';
       rr(-34, -18, 64, 7, 3.500); ctx.fill(); rr(-34, -3, 64, 7, 3.500); ctx.fill(); rr(-34, 12, 34, 7, 3.500); ctx.fill();
-      disc('#ffb300', 20, 32, 14); disc('#ffd75e', 20, 32, 10);
-      ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      disc('#d9651a', 20, 32, 14); disc('#f58a3c', 20, 32, 10.500);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.beginPath(); ctx.moveTo(14, 32); ctx.lineTo(18.500, 36.500); ctx.lineTo(26, 27); ctx.stroke();
     } else {
       const u = lane * 0.62 / 100;
@@ -832,16 +866,16 @@
     ctx.fillStyle = '#1c2029'; ctx.fillRect(-46, -22, 3, 21); ctx.fillRect(-39, -22, 3, 21); ctx.fillRect(36, -22, 3, 21); ctx.fillRect(43, -22, 3, 21);
 
     // cabin + rear glass
-    ctx.fillStyle = vgrad(-72, -44, [[0, '#5aa2ff'], [1, '#1c62d6']]);
+    ctx.fillStyle = vgrad(-72, -44, [[0, '#63cdf8'], [1, '#1b8fc6']]);
     ctx.beginPath(); ctx.moveTo(-40, -44); ctx.quadraticCurveTo(-33, -70, -24, -71); ctx.lineTo(24, -71); ctx.quadraticCurveTo(33, -70, 40, -44); ctx.closePath(); ctx.fill();
     ctx.fillStyle = vgrad(-66, -46, [[0, '#0a1630'], [1, '#2c4f86']]);
     ctx.beginPath(); ctx.moveTo(-33, -47); ctx.quadraticCurveTo(-28, -65, -21, -66); ctx.lineTo(21, -66); ctx.quadraticCurveTo(28, -65, 33, -47); ctx.closePath(); ctx.fill();
     poly('rgba(255,255,255,.2)', [-18, -66, -6, -66, -16, -47, -29, -47]);
     // mirrors
-    ctx.fillStyle = '#1c62d6'; rr(-49, -55, 10, 6, 2); ctx.fill(); rr(39, -55, 10, 6, 2); ctx.fill();
+    ctx.fillStyle = '#1b8fc6'; rr(-49, -55, 10, 6, 2); ctx.fill(); rr(39, -55, 10, 6, 2); ctx.fill();
 
     // body
-    ctx.fillStyle = vgrad(-48, -6, [[0, '#62a8ff'], [0.22, '#2a7cf5'], [0.7, '#1553c0'], [1, '#0c3a92']]);
+    ctx.fillStyle = vgrad(-48, -6, [[0, '#7fd8fb'], [0.22, '#25aae2'], [0.7, '#1580b6'], [1, '#0d5a86']]);
     ctx.beginPath();
     ctx.moveTo(-52, -16); ctx.lineTo(-52, -36); ctx.quadraticCurveTo(-51, -46, -41, -47);
     ctx.lineTo(41, -47); ctx.quadraticCurveTo(51, -46, 52, -36); ctx.lineTo(52, -16);
@@ -864,8 +898,8 @@
 
     // plate
     ctx.fillStyle = '#f7f9fc'; rr(-15, -27, 30, 11, 2); ctx.fill();
-    ctx.fillStyle = '#0b1b3a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `600 8px ${DISPLAY}`; ctx.fillText(PLATE, 0, -21, 27);
+    ctx.fillStyle = '#23226b'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `600 9px ${DISPLAY}`; ctx.fillText(PLATE, 0, -21, 27);
 
     // bumper + exhausts
     ctx.fillStyle = '#0f1420'; rr(-44, -15, 88, 9, 3.500); ctx.fill();
@@ -1033,14 +1067,14 @@
     renderBoard($('overBoard'), 5);
   });
   $('share').addEventListener('click', async () => {
-    const text = `I titled ${g.state + 1} of 50 states and scored ${fmt(g.score)} in ${BRAND} Coast to Coast. Beat that!`;
+    const text = `I titled ${g.state + 1} of 50 states and scored ${fmt(g.score)} in Coast to Coast by ${BRAND}. Beat that!`;
     try {
       if (navigator.share) await navigator.share({ text });
       else { await navigator.clipboard.writeText(text); $('share').textContent = 'Copied!'; setTimeout(() => { $('share').textContent = 'Share my score'; }, 1500); }
     } catch (err) { /* share cancelled */ }
   });
 
-  $('eventTag').textContent = `${BRAND} · ${EVENT}`;
+  $('eventTag').textContent = `${BRAND}™ by ${COMPANY} · ${EVENT}`;
   document.querySelectorAll('.brand').forEach((n) => { n.textContent = BRAND; });
   paintMute();
   window.addEventListener('resize', resize);

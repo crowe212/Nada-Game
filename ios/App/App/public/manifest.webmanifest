@@ -1,7 +1,7 @@
 {
   "name": "Coast to Coast",
   "short_name": "Coast2Coast",
-  "description": "Title all 50 states in 60 seconds.",
+  "description": "Title and register in all 50 states in 60 seconds. From DLR50 by DLRdmv.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
