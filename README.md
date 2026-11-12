@@ -42,10 +42,19 @@ Florida, title all 50 states, and get on the leaderboard.
   unlock paint: Temp Tag White, DMV Beige, Midnight Navy, Safety Margin Gold.
 - **State signs** stand on the shoulder; a checkered arch marks the Florida finish.
 - **Pause button**, results stats and a personal-best banner.
+- **Damage matters**: each hit costs 7% of top speed and shows on the car (dents, a broken tail
+  light, smoke). eQA repairs only appear while the car is damaged.
+- **More on the road**: slow SNAIL MAIL trucks that sit in a lane, and a "DMV · TAKE A NUMBER"
+  checkpoint at each tough state with two windows closed and one open.
+- **Weather and night**: rain in Oregon and Washington, snow in Alaska, night driving with
+  headlights from Nebraska to Minnesota.
+- **Landmarks**: a bridge in California, a needle tower in Washington, buttes, oil derricks, an
+  arch in Missouri, a skyline, a statue in New York, lighthouses, a giant peach, rockets.
+- **Announcer** for the big moments, using the phone's built-in voice.
 
 ## Song
 
-Save the song as `www/audio/perfect-it.mp3`. It starts on the first tap (browsers do not allow
+Upload the song into `www/audio` (either `perfect-it.mp3` or the original `PERFECT IT.mp3` name works). It starts on the first tap (browsers do not allow
 sound before that) and loops. Without the file, a built-in synth loop plays during runs.
 
 ## Shared leaderboard and tester feedback

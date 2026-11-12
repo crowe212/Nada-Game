@@ -256,3 +256,5 @@ h2 { margin: 0; font-family: var(--display); font-size: 44px; font-weight: 800; 
 .fb textarea, .fb input { width: 100%; padding: 11px 13px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .3); background: rgba(0, 0, 0, .32); color: #fff; font: inherit; font-size: 16px; -webkit-user-select: text; user-select: text; outline: none; resize: none; }
 .fb textarea:focus, .fb input:focus { border-color: var(--sky); }
 .row2 .btn.small { font-size: 16px; padding: 9px 4px 10px; letter-spacing: .02em; }
+
+#buff.bad { color: #ff8a8a; }
