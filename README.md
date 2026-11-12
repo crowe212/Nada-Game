@@ -60,9 +60,8 @@ sound before that) and loops. Without the file, a built-in synth loop plays duri
 
 Both use one Google Sheet you own. Follow the steps at the top of
 `tools/leaderboard-apps-script.gs`, then paste the web-app URL into `LEADERBOARD_URL` at the top
-of `www/game.js`. Scores go to a "Scores" tab and feedback to a "Feedback" tab. Until that is
-set, scores stay on each device and the Feedback button hands the note to the phone's share
-sheet instead.
+of `www/game.js`. Scores go to a "Scores" tab and feedback to a "Feedback" tab. This is set up and live. If the
+sheet is ever unreachable, the game shows the last list it loaded.
 
 ## Where the ideas came from
 

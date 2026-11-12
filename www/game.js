@@ -11,7 +11,7 @@
   const RUN_SECONDS = 90;      // also the length of the temp tag, one day per second
   // Shared leaderboard: paste the web-app URL from tools/leaderboard-apps-script.gs here.
   // Left empty, scores are kept on each device only.
-  const LEADERBOARD_URL = '';
+  const LEADERBOARD_URL = 'https://script.google.com/macros/s/AKfycbzsyOw5PdQncpDxe5r4MZOq8ffiLWyVVcnJaP_rZ_LxjrxyDlMxTmdcu0cz_mk0kC32MQ/exec';
   const MAX_HITS = 4;         // hurdles the car can take before it is totaled
   const AUTOPILOT_SECONDS = 4;
 
